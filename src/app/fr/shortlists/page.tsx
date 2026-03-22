@@ -13,6 +13,10 @@ export const metadata: Metadata = {
       fr: "/fr/shortlists",
     },
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function FrShortlistsPage() {

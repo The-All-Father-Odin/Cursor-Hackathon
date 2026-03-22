@@ -25,6 +25,17 @@ function getBaseAlternates(locale: Locale, path: string): Metadata["alternates"]
   };
 }
 
+function noindexFollowRobots(): Metadata["robots"] {
+  return {
+    index: false,
+    follow: true,
+    googleBot: {
+      index: false,
+      follow: true,
+    },
+  };
+}
+
 const originLabels: Record<string, { en: string; fr: string }> = {
   CN: { en: "China", fr: "Chine" },
   US: { en: "United States", fr: "États-Unis" },
@@ -51,6 +62,8 @@ export function buildSearchPageMetadata(
   const province = getProvinceLabel(provinceCode, locale) || undefined;
   const capacity = getCapacityTierLabel(firstValue(searchParams.capacity), locale) || undefined;
   const naics = clip(firstValue(searchParams.naics), 24);
+  const page = firstValue(searchParams.page);
+  const hasDeepLinkState = Boolean(query || province || capacity || naics || page);
 
   let title =
     locale === "fr"
@@ -94,6 +107,7 @@ export function buildSearchPageMetadata(
     title,
     description,
     alternates: getBaseAlternates(locale, "/search"),
+    robots: hasDeepLinkState ? noindexFollowRobots() : undefined,
   };
 }
 
@@ -106,6 +120,7 @@ export function buildMapPageMetadata(
   const province = getProvinceLabel(provinceCode, locale) || undefined;
   const supplierId = firstValue(searchParams.supplier_id) || firstValue(searchParams.selected);
   const view = firstValue(searchParams.view);
+  const hasDeepLinkState = Boolean(query || province || supplierId || (view && view !== "pins"));
 
   let title =
     locale === "fr"
@@ -156,6 +171,7 @@ export function buildMapPageMetadata(
     title,
     description,
     alternates: getBaseAlternates(locale, "/map"),
+    robots: hasDeepLinkState ? noindexFollowRobots() : undefined,
   };
 }
 
@@ -166,6 +182,17 @@ export function buildTariffsPageMetadata(
   const product = clip(firstValue(searchParams.product), 60);
   const hs = clip(firstValue(searchParams.hs), 20);
   const origin = getOriginLabel(firstValue(searchParams.origin), locale);
+  const hasDeepLinkState = Boolean(
+    product ||
+      hs ||
+      origin ||
+      firstValue(searchParams.invoice_value) ||
+      firstValue(searchParams.currency) ||
+      firstValue(searchParams.mode) ||
+      firstValue(searchParams.freight_cad) ||
+      firstValue(searchParams.claim_preference) ||
+      firstValue(searchParams.estimate)
+  );
 
   let title =
     locale === "fr"
@@ -202,5 +229,6 @@ export function buildTariffsPageMetadata(
     title,
     description,
     alternates: getBaseAlternates(locale, "/tariffs"),
+    robots: hasDeepLinkState ? noindexFollowRobots() : undefined,
   };
 }
