@@ -70,6 +70,7 @@ function TariffsPageInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const syncingFromUrlRef = useRef(true);
+  const lastEstimatedKeyRef = useRef<string | null>(null);
   const copy = useMemo(
     () =>
       locale === "fr"
@@ -219,6 +220,57 @@ function TariffsPageInner() {
   const [result, setResult] = useState<TariffEstimateResponse | null>(null);
   const [lookupResult, setLookupResult] = useState<TariffLookupResponse | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [estimateRequested, setEstimateRequested] = useState(false);
+
+  const calculationKey = useMemo(
+    () =>
+      JSON.stringify({
+        productName: productName.trim(),
+        originCountry,
+        hsCode: hsCode.trim(),
+        invoiceValue: invoiceValue.trim(),
+        invoiceCurrency,
+        shipmentMode,
+        manualFreightCad: manualFreightCad.trim(),
+        originPostalCode: originPostalCode.trim(),
+        destinationCountry: destinationCountry.trim(),
+        destinationPostalCode: destinationPostalCode.trim(),
+        parcelWeightKg: parcelWeightKg.trim(),
+        parcelLengthCm: parcelLengthCm.trim(),
+        parcelWidthCm: parcelWidthCm.trim(),
+        parcelHeightCm: parcelHeightCm.trim(),
+        claimPreference,
+      }),
+    [
+      claimPreference,
+      destinationCountry,
+      destinationPostalCode,
+      hsCode,
+      invoiceCurrency,
+      invoiceValue,
+      manualFreightCad,
+      originCountry,
+      originPostalCode,
+      parcelHeightCm,
+      parcelLengthCm,
+      parcelWeightKg,
+      parcelWidthCm,
+      productName,
+      shipmentMode,
+    ]
+  );
+
+  const canEstimate =
+    hsCode.trim().length > 0 &&
+    originCountry.trim().length > 0 &&
+    Number.isFinite(Number(invoiceValue)) &&
+    Number(invoiceValue) > 0;
+
+  function resetEstimatedResult() {
+    lastEstimatedKeyRef.current = null;
+    setEstimateRequested(false);
+    setResult(null);
+  }
 
   useEffect(() => {
     syncingFromUrlRef.current = true;
@@ -253,6 +305,10 @@ function TariffsPageInner() {
       searchParams.get("claim_preference") === "1" ||
       searchParams.get("claim_preference") === "true"
     );
+    setEstimateRequested(
+      searchParams.get("estimate") === "1" ||
+      searchParams.get("estimate") === "true"
+    );
     setResult(null);
   }, [searchParams]);
 
@@ -278,6 +334,7 @@ function TariffsPageInner() {
     if (parcelWidthCm) nextParams.set("parcel_width_cm", parcelWidthCm);
     if (parcelHeightCm) nextParams.set("parcel_height_cm", parcelHeightCm);
     if (claimPreference) nextParams.set("claim_preference", "1");
+    if (estimateRequested) nextParams.set("estimate", "1");
 
     const nextQueryString = nextParams.toString();
     const currentQueryString = searchParams.toString();
@@ -306,6 +363,7 @@ function TariffsPageInner() {
     router,
     searchParams,
     shipmentMode,
+    estimateRequested,
   ]);
 
   useEffect(() => {
@@ -348,7 +406,26 @@ function TariffsPageInner() {
     };
   }, [claimPreference, copy.lookupError, hsCode, originCountry]);
 
-  async function handleCalculate() {
+  useEffect(() => {
+    if (!estimateRequested || !canEstimate || loading) {
+      return;
+    }
+
+    if (lastEstimatedKeyRef.current === calculationKey) {
+      return;
+    }
+
+    lastEstimatedKeyRef.current = calculationKey;
+    void handleCalculate({ persistEstimate: true });
+  }, [calculationKey, canEstimate, estimateRequested, loading]);
+
+  async function handleCalculate(options?: { persistEstimate?: boolean }) {
+    const persistEstimate = (options?.persistEstimate ?? true) && canEstimate;
+    if (persistEstimate) {
+      lastEstimatedKeyRef.current = calculationKey;
+      setEstimateRequested(true);
+    }
+
     setLoading(true);
 
     try {
@@ -381,9 +458,14 @@ function TariffsPageInner() {
   }
 
   function applyCandidate(match: TariffMatchCandidate) {
+    resetEstimatedResult();
     setHsCode(match.label);
-    setResult(null);
   }
+
+  const searchHref =
+    result?.ok && result.inputs.productName
+      ? `${getLocalePath("/search")}?query=${encodeURIComponent(result.inputs.productName)}`
+      : getLocalePath("/search");
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -419,7 +501,10 @@ function TariffsPageInner() {
               <input
                 type="text"
                 value={productName}
-                onChange={(event) => setProductName(event.target.value)}
+                onChange={(event) => {
+                  resetEstimatedResult();
+                  setProductName(event.target.value);
+                }}
                 placeholder={copy.productPlaceholder}
                 className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
               />
@@ -430,7 +515,10 @@ function TariffsPageInner() {
               <div className="relative">
                 <select
                   value={originCountry}
-                  onChange={(event) => setOriginCountry(event.target.value)}
+                  onChange={(event) => {
+                    resetEstimatedResult();
+                    setOriginCountry(event.target.value);
+                  }}
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all appearance-none cursor-pointer"
                 >
                   {ORIGIN_OPTIONS.map((option) => (
@@ -448,7 +536,10 @@ function TariffsPageInner() {
               <input
                 type="text"
                 value={hsCode}
-                onChange={(event) => setHsCode(event.target.value)}
+                onChange={(event) => {
+                  resetEstimatedResult();
+                  setHsCode(event.target.value);
+                }}
                 placeholder={copy.hsPlaceholder}
                 className="w-full px-3.5 py-2.5 text-sm font-mono border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
               />
@@ -507,7 +598,10 @@ function TariffsPageInner() {
                 min="0"
                 step="0.01"
                 value={invoiceValue}
-                onChange={(event) => setInvoiceValue(event.target.value)}
+                onChange={(event) => {
+                  resetEstimatedResult();
+                  setInvoiceValue(event.target.value);
+                }}
                 placeholder="5000"
                 className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
               />
@@ -518,7 +612,10 @@ function TariffsPageInner() {
               <div className="relative">
                 <select
                   value={invoiceCurrency}
-                  onChange={(event) => setInvoiceCurrency(event.target.value)}
+                  onChange={(event) => {
+                    resetEstimatedResult();
+                    setInvoiceCurrency(event.target.value);
+                  }}
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all appearance-none cursor-pointer"
                 >
                   {CURRENCY_OPTIONS.map((currency) => (
@@ -536,7 +633,10 @@ function TariffsPageInner() {
               <div className="relative">
                 <select
                   value={shipmentMode}
-                  onChange={(event) => setShipmentMode(event.target.value as "manual" | "parcel" | "freight")}
+                  onChange={(event) => {
+                    resetEstimatedResult();
+                    setShipmentMode(event.target.value as "manual" | "parcel" | "freight");
+                  }}
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all appearance-none cursor-pointer"
                 >
                   <option value="manual">{copy.shipmentModeManual}</option>
@@ -554,7 +654,10 @@ function TariffsPageInner() {
                 min="0"
                 step="0.01"
                 value={manualFreightCad}
-                onChange={(event) => setManualFreightCad(event.target.value)}
+                onChange={(event) => {
+                  resetEstimatedResult();
+                  setManualFreightCad(event.target.value);
+                }}
                 placeholder="480"
                 disabled={shipmentMode !== "manual"}
                 className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -569,7 +672,10 @@ function TariffsPageInner() {
                   <input
                     type="text"
                     value={originPostalCode}
-                    onChange={(event) => setOriginPostalCode(event.target.value)}
+                    onChange={(event) => {
+                      resetEstimatedResult();
+                      setOriginPostalCode(event.target.value);
+                    }}
                     placeholder={locale === "fr" ? "ex. 10001" : "e.g. 10001"}
                     className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                   />
@@ -580,7 +686,10 @@ function TariffsPageInner() {
                   <input
                     type="text"
                     value={destinationCountry}
-                    onChange={(event) => setDestinationCountry(event.target.value.toUpperCase())}
+                    onChange={(event) => {
+                      resetEstimatedResult();
+                      setDestinationCountry(event.target.value.toUpperCase());
+                    }}
                     placeholder="CA"
                     className="w-full px-3.5 py-2.5 text-sm font-mono border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                   />
@@ -591,7 +700,10 @@ function TariffsPageInner() {
                   <input
                     type="text"
                     value={destinationPostalCode}
-                    onChange={(event) => setDestinationPostalCode(event.target.value)}
+                    onChange={(event) => {
+                      resetEstimatedResult();
+                      setDestinationPostalCode(event.target.value);
+                    }}
                     placeholder={locale === "fr" ? "ex. V6B1A1" : "e.g. V6B1A1"}
                     className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                   />
@@ -604,7 +716,10 @@ function TariffsPageInner() {
                     min="0"
                     step="0.01"
                     value={parcelWeightKg}
-                    onChange={(event) => setParcelWeightKg(event.target.value)}
+                    onChange={(event) => {
+                      resetEstimatedResult();
+                      setParcelWeightKg(event.target.value);
+                    }}
                     placeholder="2.5"
                     className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                   />
@@ -618,7 +733,10 @@ function TariffsPageInner() {
                       min="0"
                       step="0.1"
                       value={parcelLengthCm}
-                      onChange={(event) => setParcelLengthCm(event.target.value)}
+                      onChange={(event) => {
+                        resetEstimatedResult();
+                        setParcelLengthCm(event.target.value);
+                      }}
                       placeholder={copy.length}
                       className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                     />
@@ -627,7 +745,10 @@ function TariffsPageInner() {
                       min="0"
                       step="0.1"
                       value={parcelWidthCm}
-                      onChange={(event) => setParcelWidthCm(event.target.value)}
+                      onChange={(event) => {
+                        resetEstimatedResult();
+                        setParcelWidthCm(event.target.value);
+                      }}
                       placeholder={copy.width}
                       className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                     />
@@ -636,7 +757,10 @@ function TariffsPageInner() {
                       min="0"
                       step="0.1"
                       value={parcelHeightCm}
-                      onChange={(event) => setParcelHeightCm(event.target.value)}
+                      onChange={(event) => {
+                        resetEstimatedResult();
+                        setParcelHeightCm(event.target.value);
+                      }}
                       placeholder={copy.height}
                       className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-maple focus:ring-2 focus:ring-maple/10 outline-none transition-all placeholder:text-slate-400"
                     />
@@ -651,7 +775,10 @@ function TariffsPageInner() {
             <input
               type="checkbox"
               checked={claimPreference}
-              onChange={(event) => setClaimPreference(event.target.checked)}
+              onChange={(event) => {
+                resetEstimatedResult();
+                setClaimPreference(event.target.checked);
+              }}
               className="w-4 h-4 rounded border-slate-300 text-maple focus:ring-maple/20"
             />
             {copy.preference}
@@ -662,7 +789,9 @@ function TariffsPageInner() {
 {copy.liveInputs}
             </p>
             <button
-              onClick={handleCalculate}
+              onClick={() => {
+                void handleCalculate();
+              }}
               disabled={loading}
               className="flex items-center gap-2 px-5 py-2.5 bg-maple text-white text-sm font-semibold rounded-xl hover:bg-maple-dark active:scale-95 transition-all shadow-sm disabled:opacity-60"
             >
@@ -794,9 +923,14 @@ function TariffsPageInner() {
                     <span className="font-medium">{result.domesticComparison.source}</span>
                   </div>
                   {typeof result.domesticComparison.supplierCount === "number" ? (
-                    <p>{result.domesticComparison.supplierCount.toLocaleString(locale === "fr" ? "fr-CA" : "en-CA")} {copy.supplierMatches}</p>
+                    <div className="space-y-2">
+                      <p>{result.domesticComparison.supplierCount.toLocaleString(locale === "fr" ? "fr-CA" : "en-CA")} {copy.supplierMatches}</p>
+                      <Link href={searchHref} className="text-maple hover:text-maple-dark font-medium">
+                        {copy.searchCta}
+                      </Link>
+                    </div>
                   ) : (
-                    <Link href={getLocalePath("/search")} className="text-maple hover:text-maple-dark font-medium">{copy.searchCta}</Link>
+                    <Link href={searchHref} className="text-maple hover:text-maple-dark font-medium">{copy.searchCta}</Link>
                   )}
                 </div>
               </div>

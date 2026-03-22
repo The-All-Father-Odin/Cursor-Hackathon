@@ -156,6 +156,7 @@ data/
 | `mode` | string | Shipment mode (`manual`, `parcel`, `freight`) |
 | `freight_cad` | string | Persist manual freight input |
 | `claim_preference` | boolean | Persist preferential-treatment toggle |
+| `estimate` | boolean | Re-run the tariff estimate on refresh / shared links |
 
 ---
 
