@@ -86,6 +86,22 @@ const CAPACITY_TIER_STYLES: Record<string, string> = {
   Large: "bg-purple-50 text-purple-700 border-purple-100",
 };
 
+function FeaturedSupplierCardSkeleton() {
+  return (
+    <div className="group flex flex-col bg-white border border-slate-100 rounded-2xl p-6">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="w-10 h-10 bg-slate-100 rounded-xl animate-pulse" />
+        <div className="h-6 w-20 rounded-full bg-slate-100 animate-pulse" />
+      </div>
+      <div className="h-5 w-3/4 rounded bg-slate-200 animate-pulse mb-2" />
+      <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse mb-3" />
+      <div className="h-4 w-full rounded bg-slate-100 animate-pulse mb-2" />
+      <div className="h-4 w-5/6 rounded bg-slate-100 animate-pulse" />
+      <div className="mt-4 h-4 w-24 rounded bg-slate-100 animate-pulse" />
+    </div>
+  );
+}
+
 export function LandingPage() {
   const { t, locale, getLocalePath } = useLocale();
   const router = useRouter();
@@ -93,21 +109,45 @@ export function LandingPage() {
   const [query, setQuery] = useState("");
   const [stats, setStats] = useState<StatsResponse["stats"] | null>(null);
   const [featuredSuppliers, setFeaturedSuppliers] = useState<ApiSupplier[]>([]);
-  const [statsLoaded, setStatsLoaded] = useState(false);
+  const [homepageDataLoaded, setHomepageDataLoaded] = useState(false);
+  const [featuredLoaded, setFeaturedLoaded] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const statsRes = await getStats();
-        setStats(statsRes.stats);
-        const featured = await searchSuppliers({ limit: 6 });
-        setFeaturedSuppliers(featured.rows);
-      } catch {
+    let active = true;
+
+    getStats()
+      .then((statsRes) => {
+        if (active) {
+          setStats(statsRes.stats);
+        }
+      })
+      .catch(() => {
         // Fall back to static text
-      } finally {
-        setStatsLoaded(true);
-      }
-    })();
+      })
+      .finally(() => {
+        if (active) {
+          setHomepageDataLoaded(true);
+        }
+      });
+
+    searchSuppliers({ limit: 6 })
+      .then((featured) => {
+        if (active) {
+          setFeaturedSuppliers(featured.rows);
+        }
+      })
+      .catch(() => {
+        // Hide featured section if no data is available
+      })
+      .finally(() => {
+        if (active) {
+          setFeaturedLoaded(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -301,7 +341,7 @@ export function LandingPage() {
                 key={i}
                 className={`flex flex-col items-center text-center px-4 py-2 transition-opacity duration-500 ${
                   i < 2 ? "border-r border-white/15" : ""
-                } ${statsLoaded ? "opacity-100" : "opacity-75"}`}
+                } ${homepageDataLoaded ? "opacity-100" : "opacity-75"}`}
               >
                 <stat.icon className="w-5 h-5 text-gold mb-3 opacity-75" />
                 <div
@@ -398,7 +438,7 @@ export function LandingPage() {
       </section>
 
       {/* ─── Featured Businesses ───────────────────────────────── */}
-      {featuredSuppliers.length > 0 && (
+      {(featuredSuppliers.length > 0 || !featuredLoaded) && (
         <section className="py-24 bg-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-14">
@@ -415,7 +455,11 @@ export function LandingPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featuredSuppliers.map((supplier) => {
+              {!featuredLoaded
+                ? Array.from({ length: 6 }).map((_, index) => (
+                    <FeaturedSupplierCardSkeleton key={index} />
+                  ))
+                : featuredSuppliers.map((supplier) => {
                 const tierStyle =
                   CAPACITY_TIER_STYLES[supplier.capacity_tier ?? ""] ??
                   "bg-slate-50 text-slate-600 border-slate-100";
@@ -471,17 +515,19 @@ export function LandingPage() {
               })}
             </div>
 
-            <div className="text-center mt-10">
-              <Link
-                href={getLocalePath("/search")}
-                className="inline-flex items-center gap-2 text-maple font-semibold hover:text-maple-dark transition-colors text-[15px]"
-              >
-                {locale === "fr"
-                  ? "Voir tous les fournisseurs"
-                  : "See all suppliers"}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
+            {featuredSuppliers.length > 0 && (
+              <div className="text-center mt-10">
+                <Link
+                  href={getLocalePath("/search")}
+                  className="inline-flex items-center gap-2 text-maple font-semibold hover:text-maple-dark transition-colors text-[15px]"
+                >
+                  {locale === "fr"
+                    ? "Voir tous les fournisseurs"
+                    : "See all suppliers"}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       )}
