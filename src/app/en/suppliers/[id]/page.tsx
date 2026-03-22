@@ -436,7 +436,7 @@ export default function SupplierDetailPage() {
         </Link>
         {supplier.latitude && supplier.longitude && (
           <Link
-            href={getLocalePath("/map")}
+            href={getLocalePath(`/map?supplier_id=${encodeURIComponent(supplier.supplier_id)}`)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-colors text-sm font-medium border border-slate-200"
           >
             <Map className="w-4 h-4" />

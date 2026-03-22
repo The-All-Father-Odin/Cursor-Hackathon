@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Filter, MapPin, Layers, Menu, X, Search, RefreshCw } from "lucide-react";
 import {
   searchSuppliers,
@@ -27,8 +28,9 @@ function getScoreDotColor(score: number) {
   return "bg-red-500";
 }
 
-export default function MapPage() {
+function MapPageContent() {
   const { t, locale } = useLocale();
+  const searchParams = useSearchParams();
   const copy =
     locale === "fr"
       ? {
@@ -43,6 +45,8 @@ export default function MapPage() {
           legend: "Légende",
           canadianContent: "Contenu canadien",
           heatmapSoon: "La carte thermique sera disponible prochainement. Passez en mode Marqueurs pour voir les emplacements.",
+          focusedSupplier: "Fournisseur ciblé",
+          clearFocusedSupplier: "Effacer le fournisseur ciblé",
         }
       : {
           suppliers: "suppliers",
@@ -56,16 +60,30 @@ export default function MapPage() {
           legend: "Legend",
           canadianContent: "Canadian Content",
           heatmapSoon: "Heatmap view is coming soon. Switch to Pins to see supplier locations.",
+          focusedSupplier: "Focused supplier",
+          clearFocusedSupplier: "Clear focused supplier",
         };
   const [suppliers, setSuppliers] = useState<ApiSupplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [supplierIdFilter, setSupplierIdFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [province, setProvince] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [viewMode, setViewMode] = useState<"pins" | "heatmap">("pins");
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const supplierId = searchParams.get("supplier_id") || "";
+    const query = searchParams.get("query") || "";
+    const provinceParam = searchParams.get("province") || "";
+
+    setSupplierIdFilter(supplierId);
+    setSelectedId(supplierId || null);
+    setSearchQuery(query);
+    setProvince(provinceParam);
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +92,7 @@ export default function MapPage() {
       setError(null);
       try {
         const result = await searchSuppliers({
+          supplier_id: supplierIdFilter || undefined,
           has_geocode: true,
           limit: 200,
           query: searchQuery || undefined,
@@ -91,7 +110,12 @@ export default function MapPage() {
           ].join(","),
           province: province || undefined,
         });
-        if (!cancelled) setSuppliers(result.rows);
+        if (!cancelled) {
+          setSuppliers(result.rows);
+          if (supplierIdFilter && result.rows.some((row) => row.supplier_id === supplierIdFilter)) {
+            setSelectedId(supplierIdFilter);
+          }
+        }
       } catch (e) {
         if (!cancelled)
           setError(e instanceof Error ? e.message : copy.loadError);
@@ -103,7 +127,7 @@ export default function MapPage() {
     return () => {
       cancelled = true;
     };
-  }, [copy.loadError, province, reloadKey, searchQuery]);
+  }, [copy.loadError, province, reloadKey, searchQuery, supplierIdFilter]);
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
@@ -171,6 +195,7 @@ export default function MapPage() {
                   placeholder={copy.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => {
+                    setSupplierIdFilter("");
                     setSearchQuery(e.target.value);
                     setSelectedId(null);
                   }}
@@ -183,11 +208,12 @@ export default function MapPage() {
             <div className="p-3 border-b border-slate-100 shrink-0">
               <label className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
                 <Filter size={10} />
-                {locale === "fr" ? "Province" : "Province"}
+                {t("filter.province")}
               </label>
               <select
                 value={province}
                 onChange={(e) => {
+                  setSupplierIdFilter("");
                   setProvince(e.target.value);
                   setSelectedId(null);
                 }}
@@ -201,6 +227,23 @@ export default function MapPage() {
                 ))}
               </select>
             </div>
+
+            {supplierIdFilter && (
+              <div className="px-3 py-2 border-b border-slate-100">
+                <button
+                  onClick={() => {
+                    setSupplierIdFilter("");
+                    setSelectedId(null);
+                    setReloadKey((value) => value + 1);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-maple/10 text-maple rounded-full border border-maple/20 hover:bg-maple/15 transition-colors"
+                  aria-label={copy.clearFocusedSupplier}
+                >
+                  {copy.focusedSupplier}
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
 
             {/* Supplier list */}
             <div className="flex-1 overflow-y-auto">
@@ -330,5 +373,19 @@ export default function MapPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center bg-slate-100" style={{ height: "calc(100vh - 64px)" }}>
+          <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <MapPageContent />
+    </Suspense>
   );
 }

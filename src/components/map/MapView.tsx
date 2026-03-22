@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
@@ -48,10 +49,12 @@ export default function MapView({
       ? {
           canadian: "Canadien",
           source: "Source",
+          profile: "Voir le profil",
         }
       : {
           canadian: "Canadian",
           source: "Source",
+          profile: "View profile",
         };
 
   const geoSuppliers = suppliers.filter(
@@ -157,6 +160,21 @@ export default function MapView({
                     {labels.source}: {supplier.source_provider}
                   </p>
                 )}
+                <div style={{ marginTop: "10px" }}>
+                  <Link
+                    href={`/${locale}/suppliers/${supplier.supplier_id}`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#d80621",
+                      textDecoration: "none",
+                    }}
+                  >
+                    {labels.profile}
+                  </Link>
+                </div>
               </div>
             </Popup>
           </CircleMarker>

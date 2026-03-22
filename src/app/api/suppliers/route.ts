@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
 
     const result = await searchSuppliers({
+      supplier_id: searchParams.get("supplier_id") || undefined,
       query: searchParams.get("query") || undefined,
       naics: searchParams.get("naics") || searchParams.get("category") || undefined,
       province: searchParams.get("province") || undefined,

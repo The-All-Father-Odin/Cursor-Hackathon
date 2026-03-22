@@ -126,6 +126,7 @@ data/
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `supplier_id` | string | Exact supplier ID lookup for deep-linking or focused views |
 | `query` | string | Free-text search across name, sector, NAICS, tags |
 | `province` | string | 2-letter province code (ON, BC, AB, QC, etc.) |
 | `city` | string | City name (substring match) |

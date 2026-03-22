@@ -219,6 +219,11 @@ function buildSupplierWhereClause(opts: SearchOptions) {
   const clauses: string[] = [];
   const params: Record<string, string | number> = {};
 
+  if (opts.supplier_id) {
+    clauses.push("supplier_id = $supplierId");
+    params.$supplierId = opts.supplier_id;
+  }
+
   if (opts.province) {
     clauses.push("province_code = $province");
     params.$province = opts.province.toUpperCase();
@@ -307,6 +312,7 @@ function buildSourceWhereClause(opts: { provider?: string; province?: string; ci
 }
 
 export interface SearchOptions {
+  supplier_id?: string;
   query?: string;
   naics?: string;
   province?: string;
@@ -351,6 +357,10 @@ export async function searchSuppliers(opts: SearchOptions) {
   }
 
   let filtered = backend.suppliers;
+
+  if (opts.supplier_id) {
+    filtered = filtered.filter((row) => row.supplier_id === opts.supplier_id);
+  }
 
   if (opts.province) {
     const province = opts.province.toUpperCase();

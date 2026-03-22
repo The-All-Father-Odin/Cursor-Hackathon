@@ -87,6 +87,7 @@ export interface HealthResponse {
 }
 
 export interface SearchParams {
+  supplier_id?: string;
   query?: string;
   naics?: string;
   province?: string;
@@ -127,6 +128,7 @@ async function apiFetch<T>(path: string, params?: Record<string, string | number
 
 export async function searchSuppliers(params: SearchParams): Promise<SuppliersResponse> {
   return apiFetch<SuppliersResponse>("/suppliers", {
+    supplier_id: params.supplier_id,
     query: params.query,
     naics: params.naics,
     province: params.province,
