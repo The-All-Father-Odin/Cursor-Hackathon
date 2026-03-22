@@ -17,6 +17,7 @@ import {
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { useLocale } from "@/hooks/useLocale";
 import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
+import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import { useShortlists } from "@/hooks/useShortlists";
 import { DEFAULT_SHORTLIST_ID, getShortlistLabel, serializeShortlist } from "@/lib/shortlists";
 
@@ -62,6 +63,7 @@ function exportCSV(locale: "en" | "fr", shortlistName: string, suppliers: Array<
 
 export function ShortlistsPage() {
   const { t, locale, getLocalePath } = useLocale();
+  const supplierReturnTo = buildReturnToPath("/shortlists");
   const labels =
     locale === "fr"
       ? {
@@ -257,7 +259,9 @@ export function ShortlistsPage() {
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
                               <Link
-                                href={getLocalePath(`/suppliers/${supplier.id}`)}
+                                href={getLocalePath(
+                                  buildSupplierProfilePath(supplier.id, supplierReturnTo)
+                                )}
                                 className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                                 aria-label={locale === "fr" ? "Voir le profil" : "View profile"}
                               >

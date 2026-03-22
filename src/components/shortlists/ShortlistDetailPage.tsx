@@ -6,6 +6,7 @@ import { ArrowLeft, Bookmark, ExternalLink } from "lucide-react";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { useLocale } from "@/hooks/useLocale";
 import { getProvinceLabel } from "@/lib/i18n";
+import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import { useShortlists } from "@/hooks/useShortlists";
 import { deserializeShortlist, getShortlistLabel } from "@/lib/shortlists";
 
@@ -16,6 +17,7 @@ export default function ShortlistDetailPage() {
   const { getShortlist, ready } = useShortlists();
 
   const shortlistId = typeof params.id === "string" ? params.id : "";
+  const supplierReturnTo = buildReturnToPath(`/shortlists/${shortlistId}`, searchParams.toString());
   const embeddedShortlist = deserializeShortlist(searchParams.get("data"));
   const shortlist = embeddedShortlist?.id === shortlistId ? embeddedShortlist : getShortlist(shortlistId);
   const title = shortlist ? getShortlistLabel(shortlist, locale) : locale === "fr" ? "Liste introuvable" : "Shortlist not found";
@@ -88,7 +90,7 @@ export default function ShortlistDetailPage() {
                 </div>
               </div>
               <Link
-                href={getLocalePath(`/suppliers/${supplier.id}`)}
+                href={getLocalePath(buildSupplierProfilePath(supplier.id, supplierReturnTo))}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shrink-0"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
