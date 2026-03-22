@@ -16,9 +16,9 @@ export const dictionaries: Record<Locale, Record<string, string>> = {
     "hero.description": "Discover, evaluate, and connect with Canadian suppliers. Replace the default reflex of sourcing internationally with a fast, data-driven path to buying Canadian.",
     "hero.cta": "Search Suppliers",
     "hero.secondary_cta": "Browse Categories",
-    "hero.stats.suppliers": "1.2M+ Suppliers",
+    "hero.stats.suppliers": "50,000+ Suppliers",
     "hero.stats.provinces": "All Provinces",
-    "hero.stats.categories": "500+ Categories",
+    "hero.stats.categories": "12 Industries",
 
     // Search
     "search.placeholder": "Search for products, materials, or services...",
@@ -137,9 +137,9 @@ export const dictionaries: Record<Locale, Record<string, string>> = {
     "hero.description": "Decouvrez, evaluez et connectez-vous avec des fournisseurs canadiens. Remplacez le reflexe de l'approvisionnement international par une voie rapide et basee sur les donnees pour acheter canadien.",
     "hero.cta": "Rechercher des fournisseurs",
     "hero.secondary_cta": "Parcourir les categories",
-    "hero.stats.suppliers": "1,2M+ Fournisseurs",
+    "hero.stats.suppliers": "50 000+ fournisseurs",
     "hero.stats.provinces": "Toutes les provinces",
-    "hero.stats.categories": "500+ Categories",
+    "hero.stats.categories": "12 secteurs",
 
     // Search
     "search.placeholder": "Rechercher des produits, materiaux ou services...",

@@ -143,6 +143,9 @@ export function LandingPage() {
     locale === "fr"
       ? "Explorez les fournisseurs canadiens dans 12 grands secteurs manufacturiers."
       : "Explore Canadian suppliers across 12 major manufacturing sectors.";
+  const industryStatValue = String(NAICS_CATEGORIES.length);
+  const industryStatSub =
+    locale === "fr" ? "grands secteurs" : "major industries";
   const ctaHeadline = locale === "fr" ? "Prêt à acheter canadien?" : "Ready to buy Canadian?";
   const ctaSubtitle =
     locale === "fr"
@@ -154,8 +157,20 @@ export function LandingPage() {
       : "One platform. All the intelligence you need to source confidently within Canada.";
   const trustLabels =
     locale === "fr"
-      ? ["1,2M+ entreprises vérifiées", "Données hébergées au Canada", "Bilingue FR/EN"]
-      : ["1.2M+ verified businesses", "Canadian data residency", "Bilingual EN/FR"];
+      ? [
+          stats
+            ? `${stats.supplier_count.toLocaleString()} fournisseurs canadiens`
+            : "50 000+ fournisseurs canadiens",
+          "Données hébergées au Canada",
+          "Bilingue FR/EN",
+        ]
+      : [
+          stats
+            ? `${stats.supplier_count.toLocaleString()} Canadian suppliers`
+            : "50,000+ Canadian suppliers",
+          "Canadian data residency",
+          "Bilingual EN/FR",
+        ];
 
   return (
     <div className="overflow-x-hidden">
@@ -276,9 +291,9 @@ export function LandingPage() {
                 sub: sourceStatSub,
               },
               {
-                value: t("hero.stats.categories"),
+                value: industryStatValue,
                 icon: Globe,
-                sub: locale === "fr" ? "catégories SCIAN" : "NAICS categories",
+                sub: industryStatSub,
               },
             ].map((stat, i) => (
               <div
