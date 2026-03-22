@@ -7,6 +7,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
 import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
+import { buildSupplierProfilePath } from "@/lib/navigation";
 
 function getScoreColor(score: number): string {
   if (score >= 70) return "#10b981";
@@ -44,6 +45,7 @@ interface MapViewProps {
   locale: "en" | "fr";
   selectedSupplierId?: string | null;
   onSupplierClick?: (id: string) => void;
+  returnToPath?: string;
 }
 
 export default function MapView({
@@ -51,6 +53,7 @@ export default function MapView({
   locale,
   selectedSupplierId,
   onSupplierClick,
+  returnToPath,
 }: MapViewProps) {
   const markerRefs = useRef<Map<string, L.CircleMarker>>(new Map());
 
@@ -182,7 +185,7 @@ export default function MapView({
                 )}
                 <div style={{ marginTop: "10px" }}>
                   <Link
-                    href={`/${locale}/suppliers/${supplier.supplier_id}`}
+                    href={`/${locale}${buildSupplierProfilePath(supplier.supplier_id, returnToPath)}`}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",

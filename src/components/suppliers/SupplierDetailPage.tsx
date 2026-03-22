@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useLocale } from "@/hooks/useLocale";
 import { getSupplierDetail, ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
 import { getProvinceLabel } from "@/lib/i18n";
+import { normalizeReturnToPath } from "@/lib/navigation";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
 import Link from "next/link";
@@ -27,6 +28,7 @@ type SupplierDetailPageProps = {
 
 export default function SupplierDetailPage({ initialSupplier = null }: SupplierDetailPageProps) {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { getLocalePath, locale } = useLocale();
   const copy =
     locale === "fr"
@@ -35,6 +37,8 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
           supplierNotFound: "Fournisseur introuvable",
           supplierNotFoundBody: "Ce fournisseur est introuvable.",
           backToSearch: "Retour à la recherche",
+          backToMap: "Retour à la carte",
+          backToShortlists: "Retour aux listes",
           alsoKnownAs: "Aussi connu sous le nom de :",
           canadianContentConfidence: "Indice de confiance du contenu canadien",
           businessInformation: "Informations sur l’entreprise",
@@ -70,6 +74,8 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
           supplierNotFound: "Supplier Not Found",
           supplierNotFoundBody: "This supplier could not be found.",
           backToSearch: "Back to Search",
+          backToMap: "Back to Map",
+          backToShortlists: "Back to Shortlists",
           alsoKnownAs: "Also known as:",
           canadianContentConfidence: "Canadian Content Confidence",
           businessInformation: "Business Information",
@@ -103,6 +109,14 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
 
   const routeSupplierId = typeof params.id === "string" ? params.id : undefined;
   const supplierId = routeSupplierId ?? initialSupplier?.supplier_id ?? "";
+  const normalizedReturnTo = normalizeReturnToPath(searchParams.get("returnTo"));
+  const backHref = getLocalePath(normalizedReturnTo ?? "/search");
+  const backLabel =
+    normalizedReturnTo?.startsWith("/map")
+      ? copy.backToMap
+      : normalizedReturnTo?.startsWith("/shortlists")
+      ? copy.backToShortlists
+      : copy.backToSearch;
 
   const [supplier, setSupplier] = useState<ApiSupplier | null>(initialSupplier);
   const [loading, setLoading] = useState(!initialSupplier);
@@ -162,11 +176,11 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
         <h1 className="text-2xl font-bold text-slate-900 mb-2">{copy.supplierNotFound}</h1>
         <p className="text-slate-500 mb-6">{error || copy.supplierNotFoundBody}</p>
         <Link
-          href={getLocalePath("/search")}
+          href={backHref}
           className="inline-flex items-center gap-2 px-4 py-2 bg-maple text-white rounded-xl hover:bg-maple-dark transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          {copy.backToSearch}
+          {backLabel}
         </Link>
       </div>
     );
@@ -180,11 +194,11 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       <Link
-        href={getLocalePath("/search")}
+        href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        {copy.backToSearch}
+        {backLabel}
       </Link>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 sm:p-8 mb-6">
@@ -453,11 +467,11 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Link
-          href={getLocalePath("/search")}
+          href={backHref}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-maple text-white rounded-xl hover:bg-maple-dark transition-colors text-sm font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
-          {copy.backToSearch}
+          {backLabel}
         </Link>
         {supplier.latitude && supplier.longitude && (
           <Link

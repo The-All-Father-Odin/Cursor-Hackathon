@@ -27,6 +27,7 @@ import {
   SearchParams,
 } from "@/lib/api";
 import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
+import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import { shortlistSupplierFromApi } from "@/lib/shortlists";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
@@ -178,6 +179,7 @@ function SearchContent() {
         };
   const searchParams = useSearchParams();
   const syncingFromUrlRef = useRef(true);
+  const supplierReturnTo = buildReturnToPath("/search", searchParams.toString());
   const { isShortlisted, toggleDefaultSupplier } = useShortlists();
 
   const [query, setQuery] = useState("");
@@ -531,7 +533,9 @@ function SearchContent() {
 	                            <span className="hidden sm:inline">{t("supplier.addToShortlist")}</span>
 	                          </button>
                           <Link
-                            href={getLocalePath(`/suppliers/${supplier.supplier_id}`)}
+                            href={getLocalePath(
+                              buildSupplierProfilePath(supplier.supplier_id, supplierReturnTo)
+                            )}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-white transition-colors"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />

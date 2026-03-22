@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { useLocale } from "@/hooks/useLocale";
 import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
+import { buildReturnToPath } from "@/lib/navigation";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
@@ -34,6 +35,7 @@ function MapPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const syncingFromUrlRef = useRef(true);
+  const supplierReturnTo = buildReturnToPath("/map", searchParams.toString());
   const copy =
     locale === "fr"
       ? {
@@ -401,6 +403,7 @@ function MapPageContent() {
             <MapView
               suppliers={suppliers}
               locale={locale}
+              returnToPath={supplierReturnTo}
               selectedSupplierId={selectedId}
               onSupplierClick={(id) =>
                 setSelectedId(selectedId === id ? null : id)
