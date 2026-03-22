@@ -7,6 +7,7 @@ import { useLocale } from "@/hooks/useLocale";
 import { NAICS_CATEGORIES } from "@/data/mock-suppliers";
 import { getStats, searchSuppliers } from "@/lib/api";
 import type { StatsResponse, ApiSupplier } from "@/lib/api";
+import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 import {
   Search,
   MapPin,
@@ -416,6 +417,7 @@ export function LandingPage() {
                 const tierStyle =
                   CAPACITY_TIER_STYLES[supplier.capacity_tier ?? ""] ??
                   "bg-slate-50 text-slate-600 border-slate-100";
+                const provinceLabel = getProvinceLabel(supplier.province_code, locale);
                 return (
                   <Link
                     key={supplier.supplier_id}
@@ -430,7 +432,7 @@ export function LandingPage() {
                         <span
                           className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border ${tierStyle}`}
                         >
-                          {supplier.capacity_tier}
+                          {getCapacityTierLabel(supplier.capacity_tier, locale)}
                         </span>
                       )}
                     </div>
@@ -445,7 +447,7 @@ export function LandingPage() {
                       <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span>
-                          {[supplier.city, supplier.province_code].filter(Boolean).join(", ")}
+                          {[supplier.city, provinceLabel].filter(Boolean).join(", ")}
                         </span>
                       </div>
                     )}

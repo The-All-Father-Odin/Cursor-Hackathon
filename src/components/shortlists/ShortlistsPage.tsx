@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { useLocale } from "@/hooks/useLocale";
+import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 import { useShortlists } from "@/hooks/useShortlists";
 import { DEFAULT_SHORTLIST_ID, getShortlistLabel, serializeShortlist } from "@/lib/shortlists";
 
@@ -36,9 +37,9 @@ function exportCSV(locale: "en" | "fr", shortlistName: string, suppliers: Array<
   const rows = suppliers.map((supplier) => [
     supplier.name,
     supplier.city ?? "",
-    supplier.provinceCode ?? "",
+    getProvinceLabel(supplier.provinceCode, locale),
     supplier.canadianContentScore,
-    supplier.capacityTier ?? "",
+    getCapacityTierLabel(supplier.capacityTier, locale),
     supplier.sourceProvider ?? "",
   ]);
 
@@ -234,41 +235,45 @@ export function ShortlistsPage() {
                 {isExpanded && shortlist.suppliers.length > 0 && (
                   <div className="border-t border-slate-100 px-6 py-4 bg-slate-50/50">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {shortlist.suppliers.map((supplier) => (
-                        <div
-                          key={supplier.id}
-                          className="bg-white rounded-lg border border-slate-100 px-4 py-3 flex items-center justify-between gap-3 hover:border-slate-200 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <CanadianContentBadge score={supplier.canadianContentScore} size="sm" />
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-800 truncate">{supplier.name}</p>
-                              <p className="text-xs text-slate-500">
-                                {[supplier.city, supplier.provinceCode].filter(Boolean).join(", ")}
-                              </p>
-                              {supplier.sourceProvider && (
-                                <p className="text-[11px] text-slate-400 mt-0.5">{supplier.sourceProvider}</p>
-                              )}
+                      {shortlist.suppliers.map((supplier) => {
+                        const provinceLabel = getProvinceLabel(supplier.provinceCode, locale);
+
+                        return (
+                          <div
+                            key={supplier.id}
+                            className="bg-white rounded-lg border border-slate-100 px-4 py-3 flex items-center justify-between gap-3 hover:border-slate-200 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <CanadianContentBadge score={supplier.canadianContentScore} size="sm" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-800 truncate">{supplier.name}</p>
+                                <p className="text-xs text-slate-500">
+                                  {[supplier.city, provinceLabel].filter(Boolean).join(", ")}
+                                </p>
+                                {supplier.sourceProvider && (
+                                  <p className="text-[11px] text-slate-400 mt-0.5">{supplier.sourceProvider}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Link
+                                href={getLocalePath(`/suppliers/${supplier.id}`)}
+                                className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                aria-label={locale === "fr" ? "Voir le profil" : "View profile"}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Link>
+                              <button
+                                onClick={() => removeSupplier(shortlist.id, supplier.id)}
+                                className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                aria-label={locale === "fr" ? "Retirer le fournisseur" : "Remove supplier"}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Link
-                              href={getLocalePath(`/suppliers/${supplier.id}`)}
-                              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                              aria-label={locale === "fr" ? "Voir le profil" : "View profile"}
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => removeSupplier(shortlist.id, supplier.id)}
-                              className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                              aria-label={locale === "fr" ? "Retirer le fournisseur" : "Remove supplier"}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

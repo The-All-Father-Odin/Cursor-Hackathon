@@ -245,6 +245,38 @@ export const dictionaries: Record<Locale, Record<string, string>> = {
   },
 };
 
+const provinceLabels: Record<string, Record<Locale, string>> = {
+  AB: { en: "Alberta", fr: "Alberta" },
+  BC: { en: "British Columbia", fr: "Colombie-Britannique" },
+  MB: { en: "Manitoba", fr: "Manitoba" },
+  NB: { en: "New Brunswick", fr: "Nouveau-Brunswick" },
+  NL: { en: "Newfoundland and Labrador", fr: "Terre-Neuve-et-Labrador" },
+  NS: { en: "Nova Scotia", fr: "Nouvelle-Écosse" },
+  NT: { en: "Northwest Territories", fr: "Territoires du Nord-Ouest" },
+  NU: { en: "Nunavut", fr: "Nunavut" },
+  ON: { en: "Ontario", fr: "Ontario" },
+  PE: { en: "Prince Edward Island", fr: "Île-du-Prince-Édouard" },
+  QC: { en: "Quebec", fr: "Québec" },
+  SK: { en: "Saskatchewan", fr: "Saskatchewan" },
+  YT: { en: "Yukon", fr: "Yukon" },
+};
+
+const capacityTierLabels = {
+  Small: { en: "Small", fr: "Petite" },
+  Medium: { en: "Medium", fr: "Moyenne" },
+  Large: { en: "Large", fr: "Grande" },
+} as const;
+
+export function getProvinceLabel(code: string | null | undefined, locale: Locale): string {
+  if (!code) return "";
+  return provinceLabels[code.toUpperCase()]?.[locale] ?? code;
+}
+
+export function getCapacityTierLabel(tier: string | null | undefined, locale: Locale): string {
+  if (!tier) return "";
+  return capacityTierLabels[tier as keyof typeof capacityTierLabels]?.[locale] ?? tier;
+}
+
 export function t(locale: Locale, key: string): string {
   return dictionaries[locale]?.[key] ?? dictionaries.en[key] ?? key;
 }

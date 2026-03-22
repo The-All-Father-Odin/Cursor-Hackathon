@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, Bookmark, ExternalLink } from "lucide-react";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { useLocale } from "@/hooks/useLocale";
+import { getProvinceLabel } from "@/lib/i18n";
 import { useShortlists } from "@/hooks/useShortlists";
 import { deserializeShortlist, getShortlistLabel } from "@/lib/shortlists";
 
@@ -66,32 +67,36 @@ export default function ShortlistDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {shortlist.suppliers.map((supplier) => (
-          <div
-            key={supplier.id}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-start justify-between gap-4"
-          >
-            <div className="flex items-start gap-3 min-w-0">
-              <CanadianContentBadge score={supplier.canadianContentScore} size="sm" />
-              <div className="min-w-0">
-                <h2 className="font-semibold text-slate-900 truncate">{supplier.name}</h2>
-                <p className="text-sm text-slate-500">
-                  {[supplier.city, supplier.provinceCode].filter(Boolean).join(", ")}
-                </p>
-                {supplier.briefInfo && (
-                  <p className="text-sm text-slate-500 mt-2 line-clamp-2">{supplier.briefInfo}</p>
-                )}
-              </div>
-            </div>
-            <Link
-              href={getLocalePath(`/suppliers/${supplier.id}`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shrink-0"
+        {shortlist.suppliers.map((supplier) => {
+          const provinceLabel = getProvinceLabel(supplier.provinceCode, locale);
+
+          return (
+            <div
+              key={supplier.id}
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-start justify-between gap-4"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              {locale === "fr" ? "Profil" : "Profile"}
-            </Link>
-          </div>
-        ))}
+              <div className="flex items-start gap-3 min-w-0">
+                <CanadianContentBadge score={supplier.canadianContentScore} size="sm" />
+                <div className="min-w-0">
+                  <h2 className="font-semibold text-slate-900 truncate">{supplier.name}</h2>
+                  <p className="text-sm text-slate-500">
+                    {[supplier.city, provinceLabel].filter(Boolean).join(", ")}
+                  </p>
+                  {supplier.briefInfo && (
+                    <p className="text-sm text-slate-500 mt-2 line-clamp-2">{supplier.briefInfo}</p>
+                  )}
+                </div>
+              </div>
+              <Link
+                href={getLocalePath(`/suppliers/${supplier.id}`)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                {locale === "fr" ? "Profil" : "Profile"}
+              </Link>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

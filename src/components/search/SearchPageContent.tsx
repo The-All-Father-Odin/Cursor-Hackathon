@@ -22,11 +22,11 @@ import { useShortlists } from "@/hooks/useShortlists";
 import {
   searchSuppliers,
   ApiSupplier,
-  PROVINCE_CODES,
   PROVINCE_CODE_LIST,
   deriveCanadianConfidence,
   SearchParams,
 } from "@/lib/api";
+import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 import { shortlistSupplierFromApi } from "@/lib/shortlists";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
@@ -34,6 +34,7 @@ import { CapacityBadge } from "@/components/ui/CapacityBadge";
 const LIMIT = 20;
 
 interface FilterPanelProps {
+  locale: "en" | "fr";
   province: string;
   capacity: string;
   onProvinceChange: (v: string) => void;
@@ -43,6 +44,7 @@ interface FilterPanelProps {
 }
 
 function FilterPanel({
+  locale,
   province,
   capacity,
   onProvinceChange,
@@ -66,7 +68,7 @@ function FilterPanel({
             <option value="">{t("filter.province.all")}</option>
             {PROVINCE_CODE_LIST.map((code) => (
               <option key={code} value={code}>
-                {PROVINCE_CODES[code]}
+                {getProvinceLabel(code, locale)}
               </option>
             ))}
           </select>
@@ -86,9 +88,9 @@ function FilterPanel({
             className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 pr-8 focus:outline-none focus:ring-2 focus:ring-maple/20 focus:border-maple"
           >
             <option value="">{t("filter.capacity.all")}</option>
-            <option value="Small">Small</option>
-            <option value="Medium">Medium</option>
-            <option value="Large">Large</option>
+            <option value="Small">{getCapacityTierLabel("Small", locale)}</option>
+            <option value="Medium">{getCapacityTierLabel("Medium", locale)}</option>
+            <option value="Large">{getCapacityTierLabel("Large", locale)}</option>
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
@@ -279,6 +281,7 @@ function SearchContent() {
   const endIndex = Math.min((page + 1) * LIMIT, totalCount);
 
   const filterPanelProps = {
+    locale,
     province,
     capacity,
     onProvinceChange: (v: string) => { setProvince(v); setPage(0); },
@@ -436,6 +439,7 @@ function SearchContent() {
 	                      supplier.capacity_tier === "Large"
 	                        ? (supplier.capacity_tier as "Small" | "Medium" | "Large")
 	                        : null;
+                        const provinceLabel = getProvinceLabel(supplier.province_code, locale);
                         const saved = isShortlisted(supplier.supplier_id);
 
                     return (
@@ -462,7 +466,7 @@ function SearchContent() {
                                 <div className="flex items-center gap-1.5 text-sm text-slate-500">
                                   <MapPin className="w-3.5 h-3.5 text-maple shrink-0" />
                                   <span>
-                                    {[supplier.city, supplier.province_code]
+                                    {[supplier.city, provinceLabel]
                                       .filter(Boolean)
                                       .join(", ")}
                                   </span>

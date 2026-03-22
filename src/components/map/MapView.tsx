@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaf
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
+import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 
 function getScoreColor(score: number): string {
   if (score >= 70) return "#10b981";
@@ -95,6 +96,7 @@ export default function MapView({
         const { score } = deriveCanadianConfidence(supplier);
         const color = getScoreColor(score);
         const isSelected = selectedSupplierId === supplier.supplier_id;
+        const provinceLabel = getProvinceLabel(supplier.province_code, locale);
 
         return (
           <CircleMarker
@@ -125,7 +127,7 @@ export default function MapView({
                   {supplier.business_name}
                 </p>
                 <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "6px" }}>
-                  {[supplier.city, supplier.province_code].filter(Boolean).join(", ")}
+                  {[supplier.city, provinceLabel].filter(Boolean).join(", ")}
                 </p>
                 {supplier.brief_info && (
                   <p
@@ -157,7 +159,7 @@ export default function MapView({
                         color: "#374151",
                       }}
                     >
-                      {supplier.capacity_tier}
+                      {getCapacityTierLabel(supplier.capacity_tier, locale)}
                     </span>
                   )}
                   <span

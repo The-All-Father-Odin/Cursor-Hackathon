@@ -7,11 +7,11 @@ import { Filter, MapPin, Layers, Menu, X, Search, RefreshCw } from "lucide-react
 import {
   searchSuppliers,
   ApiSupplier,
-  PROVINCE_CODES,
   PROVINCE_CODE_LIST,
   deriveCanadianConfidence,
 } from "@/lib/api";
 import { useLocale } from "@/hooks/useLocale";
+import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
@@ -258,7 +258,7 @@ function MapPageContent() {
                 <option value="">{copy.allProvinces}</option>
                 {PROVINCE_CODE_LIST.map((code) => (
                   <option key={code} value={code}>
-                    {PROVINCE_CODES[code]}
+                    {getProvinceLabel(code, locale)}
                   </option>
                 ))}
               </select>
@@ -310,6 +310,7 @@ function MapPageContent() {
                 suppliers.map((supplier) => {
                   const { score } = deriveCanadianConfidence(supplier);
                   const isSelected = selectedId === supplier.supplier_id;
+                  const provinceLabel = getProvinceLabel(supplier.province_code, locale);
                   return (
                     <button
                       key={supplier.supplier_id}
@@ -328,13 +329,13 @@ function MapPageContent() {
                             {supplier.business_name}
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            {[supplier.city, supplier.province_code]
+                            {[supplier.city, provinceLabel]
                               .filter(Boolean)
                               .join(", ")}
                           </p>
                           {supplier.capacity_tier && (
                             <p className="text-xs text-slate-500 mt-0.5">
-                              {supplier.capacity_tier}
+                              {getCapacityTierLabel(supplier.capacity_tier, locale)}
                             </p>
                           )}
                         </div>

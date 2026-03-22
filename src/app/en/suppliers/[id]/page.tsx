@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useLocale } from "@/hooks/useLocale";
-import { getSupplierDetail, ApiSupplier, deriveCanadianConfidence, PROVINCE_CODES } from "@/lib/api";
+import { getSupplierDetail, ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
+import { getProvinceLabel } from "@/lib/i18n";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
 import Link from "next/link";
@@ -149,8 +150,8 @@ export default function SupplierDetailPage() {
 
   const confidence = deriveCanadianConfidence(supplier);
   const provinceName = supplier.province_code
-    ? PROVINCE_CODES[supplier.province_code] || supplier.province_name || supplier.province_code
-    : "";
+    ? getProvinceLabel(supplier.province_code, locale)
+    : supplier.province_name || "";
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
