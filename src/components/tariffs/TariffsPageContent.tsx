@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Calculator,
@@ -18,9 +19,9 @@ import { useLocale } from "@/hooks/useLocale";
 import { ORIGIN_OPTIONS } from "@/lib/tariff/treatments";
 import type { TariffEstimateResponse, TariffLookupResponse, TariffMatchCandidate } from "@/types/tariff";
 
-function formatCurrency(amount: number | null) {
-  if (amount == null) return "Unavailable";
-  return new Intl.NumberFormat("en-CA", {
+function formatCurrency(amount: number | null, locale: "en" | "fr", unavailable: string) {
+  if (amount == null) return unavailable;
+  return new Intl.NumberFormat(locale === "fr" ? "fr-CA" : "en-CA", {
     style: "currency",
     currency: "CAD",
     maximumFractionDigits: 2,
@@ -28,9 +29,47 @@ function formatCurrency(amount: number | null) {
 }
 
 const CURRENCY_OPTIONS = ["CAD", "USD", "EUR", "CNY", "MXN"];
+const SHIPMENT_MODES = new Set(["manual", "parcel", "freight"]);
 
-export default function TariffsPageContent() {
+function getOriginOptionLabel(value: string, locale: "en" | "fr", fallback: string) {
+  const labels: Record<string, { en: string; fr: string }> = {
+    CN: { en: "China", fr: "Chine" },
+    US: { en: "United States", fr: "États-Unis" },
+    MX: { en: "Mexico", fr: "Mexique" },
+    EU: { en: "European Union", fr: "Union européenne" },
+    GB: { en: "United Kingdom", fr: "Royaume-Uni" },
+    AU: { en: "Australia", fr: "Australie" },
+    NZ: { en: "New Zealand", fr: "Nouvelle-Zélande" },
+    JP: { en: "Japan", fr: "Japon" },
+    KR: { en: "South Korea", fr: "Corée du Sud" },
+    CL: { en: "Chile", fr: "Chili" },
+    CO: { en: "Colombia", fr: "Colombie" },
+    CR: { en: "Costa Rica", fr: "Costa Rica" },
+    IL: { en: "Israel", fr: "Israël" },
+    HN: { en: "Honduras", fr: "Honduras" },
+    PA: { en: "Panama", fr: "Panama" },
+    UA: { en: "Ukraine", fr: "Ukraine" },
+    PE: { en: "Peru", fr: "Pérou" },
+    SG: { en: "Singapore", fr: "Singapour" },
+    VN: { en: "Vietnam", fr: "Vietnam" },
+    MY: { en: "Malaysia", fr: "Malaisie" },
+    BN: { en: "Brunei", fr: "Brunéi" },
+    OTHER: { en: "Other / MFN", fr: "Autre / NPF" },
+  };
+
+  return labels[value]?.[locale] ?? fallback;
+}
+
+function isShipmentMode(value: string): value is "manual" | "parcel" | "freight" {
+  return SHIPMENT_MODES.has(value);
+}
+
+function TariffsPageInner() {
   const { locale, t, getLocalePath } = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const syncingFromUrlRef = useRef(true);
   const copy = useMemo(
     () =>
       locale === "fr"
@@ -93,6 +132,8 @@ export default function TariffsPageContent() {
             noWarnings: "Aucun avertissement.",
             searchCta: "Trouver des fournisseurs canadiens et demander des devis",
             freightSource: "Source du fret",
+            tariffItem: "Poste tarifaire",
+            unavailable: "Indisponible",
           }
         : {
             heading: "Live tariff calculator",
@@ -153,6 +194,8 @@ export default function TariffsPageContent() {
             noWarnings: "No warnings.",
             searchCta: "Find Canadian suppliers and request quotes",
             freightSource: "Freight source",
+            tariffItem: "Tariff item",
+            unavailable: "Unavailable",
           },
     [locale]
   );
@@ -176,6 +219,94 @@ export default function TariffsPageContent() {
   const [result, setResult] = useState<TariffEstimateResponse | null>(null);
   const [lookupResult, setLookupResult] = useState<TariffLookupResponse | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+
+  useEffect(() => {
+    syncingFromUrlRef.current = true;
+
+    const originParam = searchParams.get("origin") || "CN";
+    const nextOriginCountry = ORIGIN_OPTIONS.some((option) => option.value === originParam)
+      ? originParam
+      : "CN";
+    const currencyParam = searchParams.get("currency") || "USD";
+    const nextInvoiceCurrency = CURRENCY_OPTIONS.includes(currencyParam)
+      ? currencyParam
+      : "USD";
+    const nextShipmentModeParam = searchParams.get("mode") || "manual";
+    const nextShipmentMode = isShipmentMode(nextShipmentModeParam) ? nextShipmentModeParam : "manual";
+    const nextDestinationCountry = searchParams.get("destination_country") || "CA";
+
+    setProductName(searchParams.get("product") || "");
+    setOriginCountry(nextOriginCountry);
+    setHsCode(searchParams.get("hs") || "");
+    setInvoiceValue(searchParams.get("invoice_value") || "");
+    setInvoiceCurrency(nextInvoiceCurrency);
+    setShipmentMode(nextShipmentMode);
+    setManualFreightCad(searchParams.get("freight_cad") || "");
+    setOriginPostalCode(searchParams.get("origin_postal") || "");
+    setDestinationCountry(nextDestinationCountry);
+    setDestinationPostalCode(searchParams.get("destination_postal") || "");
+    setParcelWeightKg(searchParams.get("parcel_weight_kg") || "");
+    setParcelLengthCm(searchParams.get("parcel_length_cm") || "");
+    setParcelWidthCm(searchParams.get("parcel_width_cm") || "");
+    setParcelHeightCm(searchParams.get("parcel_height_cm") || "");
+    setClaimPreference(
+      searchParams.get("claim_preference") === "1" ||
+      searchParams.get("claim_preference") === "true"
+    );
+    setResult(null);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (syncingFromUrlRef.current) {
+      syncingFromUrlRef.current = false;
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    if (productName) nextParams.set("product", productName);
+    if (originCountry !== "CN") nextParams.set("origin", originCountry);
+    if (hsCode) nextParams.set("hs", hsCode);
+    if (invoiceValue) nextParams.set("invoice_value", invoiceValue);
+    if (invoiceCurrency !== "USD") nextParams.set("currency", invoiceCurrency);
+    if (shipmentMode !== "manual") nextParams.set("mode", shipmentMode);
+    if (manualFreightCad) nextParams.set("freight_cad", manualFreightCad);
+    if (originPostalCode) nextParams.set("origin_postal", originPostalCode);
+    if (destinationCountry !== "CA") nextParams.set("destination_country", destinationCountry);
+    if (destinationPostalCode) nextParams.set("destination_postal", destinationPostalCode);
+    if (parcelWeightKg) nextParams.set("parcel_weight_kg", parcelWeightKg);
+    if (parcelLengthCm) nextParams.set("parcel_length_cm", parcelLengthCm);
+    if (parcelWidthCm) nextParams.set("parcel_width_cm", parcelWidthCm);
+    if (parcelHeightCm) nextParams.set("parcel_height_cm", parcelHeightCm);
+    if (claimPreference) nextParams.set("claim_preference", "1");
+
+    const nextQueryString = nextParams.toString();
+    const currentQueryString = searchParams.toString();
+    const nextUrl = nextQueryString ? `${pathname}?${nextQueryString}` : pathname;
+    const currentUrl = currentQueryString ? `${pathname}?${currentQueryString}` : pathname;
+
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [
+    claimPreference,
+    destinationCountry,
+    destinationPostalCode,
+    hsCode,
+    invoiceCurrency,
+    invoiceValue,
+    manualFreightCad,
+    originCountry,
+    originPostalCode,
+    parcelHeightCm,
+    parcelLengthCm,
+    parcelWeightKg,
+    parcelWidthCm,
+    pathname,
+    productName,
+    router,
+    searchParams,
+    shipmentMode,
+  ]);
 
   useEffect(() => {
     const normalizedHs = hsCode.replace(/\D/g, "");
@@ -304,7 +435,7 @@ export default function TariffsPageContent() {
                 >
                   {ORIGIN_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {getOriginOptionLabel(option.value, locale, option.label)}
                     </option>
                   ))}
                 </select>
@@ -583,7 +714,7 @@ export default function TariffsPageContent() {
                 </div>
                 <dl className="space-y-3 text-sm">
                   <div>
-                    <dt className="text-slate-400 uppercase tracking-wide text-[11px]">Tariff item</dt>
+                    <dt className="text-slate-400 uppercase tracking-wide text-[11px]">{copy.tariffItem}</dt>
                     <dd className="font-mono text-slate-900 mt-1">{result.tariff.label}</dd>
                   </div>
                   <div>
@@ -620,15 +751,15 @@ export default function TariffsPageContent() {
                 <dl className="space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-slate-500">{copy.invoiceCad}</dt>
-                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.invoiceCad)}</dd>
+                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.invoiceCad, locale, copy.unavailable)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-slate-500">{copy.duty}</dt>
-                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.dutyCad)}</dd>
+                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.dutyCad, locale, copy.unavailable)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-slate-500">{copy.freight}</dt>
-                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.freightCad)}</dd>
+                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.freightCad, locale, copy.unavailable)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-slate-500">{copy.freightSource}</dt>
@@ -636,11 +767,11 @@ export default function TariffsPageContent() {
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-slate-500">{copy.gst}</dt>
-                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.gstCad)}</dd>
+                    <dd className="font-medium text-slate-900">{formatCurrency(result.costs.gstCad, locale, copy.unavailable)}</dd>
                   </div>
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-4">
                     <dt className="font-semibold text-slate-900">{copy.total}</dt>
-                    <dd className="font-bold text-lg text-slate-900">{formatCurrency(result.costs.totalImportedCad)}</dd>
+                    <dd className="font-bold text-lg text-slate-900">{formatCurrency(result.costs.totalImportedCad, locale, copy.unavailable)}</dd>
                   </div>
                 </dl>
                 {!result.costs.calculable && (
@@ -663,7 +794,7 @@ export default function TariffsPageContent() {
                     <span className="font-medium">{result.domesticComparison.source}</span>
                   </div>
                   {typeof result.domesticComparison.supplierCount === "number" ? (
-                    <p>{result.domesticComparison.supplierCount.toLocaleString()} {copy.supplierMatches}</p>
+                    <p>{result.domesticComparison.supplierCount.toLocaleString(locale === "fr" ? "fr-CA" : "en-CA")} {copy.supplierMatches}</p>
                   ) : (
                     <Link href={getLocalePath("/search")} className="text-maple hover:text-maple-dark font-medium">{copy.searchCta}</Link>
                   )}
@@ -693,5 +824,19 @@ export default function TariffsPageContent() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TariffsPageContent() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <TariffsPageInner />
+    </Suspense>
   );
 }

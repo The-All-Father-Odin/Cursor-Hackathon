@@ -144,6 +144,19 @@ data/
 | `limit` | integer | Max results (default: 20, max: 500) |
 | `offset` | integer | Pagination offset |
 
+### Tariff Calculator Deep-Link Parameters (`/en/tariffs`, `/fr/tariffs`)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `product` | string | Persist the current product description |
+| `origin` | string | ISO-like origin selector (`CN`, `US`, `MX`, `EU`, etc.) |
+| `hs` | string | Persist the current HS / tariff code input |
+| `invoice_value` | string | Persist the current invoice amount |
+| `currency` | string | Persist the invoice currency |
+| `mode` | string | Shipment mode (`manual`, `parcel`, `freight`) |
+| `freight_cad` | string | Persist manual freight input |
+| `claim_preference` | boolean | Persist preferential-treatment toggle |
+
 ---
 
 ## Getting Started
