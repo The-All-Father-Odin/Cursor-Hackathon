@@ -1,5 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  localizeTariffError,
+  localizeTariffRateText,
+  normalizeTariffLocale,
+  type TariffLocale,
+} from "@/lib/tariff/messages";
 import { getTreatmentCode } from "@/lib/tariff/treatments";
 import type { TariffLookupResponse, TariffMatchCandidate, TariffRate, TariffResolution } from "@/types/tariff";
 
@@ -40,9 +46,9 @@ function formatTariffLabel(baseCode: string, suffix: string) {
   return suffix ? `${baseCode}.${suffix}` : baseCode;
 }
 
-function parseTariffRate(rateText: string): TariffRate {
+function parseTariffRate(rateText: string, locale: TariffLocale): TariffRate {
   if (/^free$/i.test(rateText)) {
-    return { kind: "free", text: "Free", percent: 0 };
+    return { kind: "free", text: localizeTariffRateText("Free", locale), percent: 0 };
   }
 
   const simplePercentMatch = rateText.match(/^([0-9]+(?:\.[0-9]+)?)%$/);
@@ -170,7 +176,11 @@ async function readSnapshotRows(): Promise<TariffRow[] | null> {
   return snapshotRowsPromise;
 }
 
-function toCandidate(row: TariffRow, treatment: ReturnType<typeof getTreatmentCode>): TariffMatchCandidate {
+function toCandidate(
+  row: TariffRow,
+  treatment: ReturnType<typeof getTreatmentCode>,
+  locale: TariffLocale
+): TariffMatchCandidate {
   const specialRates = parseSpecialRates(row.specialRateText);
   const rateText = treatment === "MFN" ? row.generalRateText : specialRates.get(treatment) ?? row.generalRateText;
   const label = formatTariffLabel(row.baseCode, row.suffix);
@@ -180,26 +190,35 @@ function toCandidate(row: TariffRow, treatment: ReturnType<typeof getTreatmentCo
     label,
     description: row.description,
     treatment,
-    rateText,
+    rateText: localizeTariffRateText(rateText, locale),
   };
 }
 
-function toResolution(match: TariffMatchCandidate, chapterUrl: string): TariffResolution {
+function toResolution(match: TariffMatchCandidate, chapterUrl: string, locale: TariffLocale): TariffResolution {
   return {
     code: match.code,
     label: match.label,
     description: match.description,
     treatment: match.treatment,
-    rate: parseTariffRate(match.rateText),
+    rate: parseTariffRate(match.rateText, locale),
     source: "CBSA",
     chapterUrl,
   };
 }
 
-export async function lookupTariffMatches(hsCodeInput: string, originCountry: string, claimPreference?: boolean) {
+export async function lookupTariffMatches(
+  hsCodeInput: string,
+  originCountry: string,
+  claimPreference?: boolean,
+  locale?: TariffLocale
+) {
+  const resolvedLocale = normalizeTariffLocale(locale);
   const hsDigits = digitsOnly(hsCodeInput);
   if (hsDigits.length < 6) {
-    return { ok: false as const, error: "Enter at least a 6-digit HS code." };
+    return {
+      ok: false as const,
+      error: localizeTariffError("Enter at least a 6-digit HS code.", resolvedLocale),
+    };
   }
 
   const chapter = hsDigits.slice(0, 2);
@@ -219,13 +238,13 @@ export async function lookupTariffMatches(hsCodeInput: string, originCountry: st
         fullDigits.startsWith(hsDigits)
       );
     })
-    .map((row) => toCandidate(row, treatment))
+    .map((row) => toCandidate(row, treatment, resolvedLocale))
     .slice(0, 20);
 
   if (matches.length === 0) {
     return {
       ok: false as const,
-      error: `No CBSA tariff item match found for ${hsCodeInput}.`,
+      error: localizeTariffError(`No CBSA tariff item match found for ${hsCodeInput}.`, resolvedLocale),
     };
   }
 
@@ -244,9 +263,11 @@ export async function lookupTariffMatches(hsCodeInput: string, originCountry: st
 export async function resolveTariff(
   hsCodeInput: string,
   originCountry: string,
-  claimPreference?: boolean
+  claimPreference?: boolean,
+  locale?: TariffLocale
 ): Promise<{ ok: true; tariff: TariffResolution } | { ok: false; error: string; matches?: TariffMatchCandidate[] }> {
-  const lookup = await lookupTariffMatches(hsCodeInput, originCountry, claimPreference);
+  const resolvedLocale = normalizeTariffLocale(locale);
+  const lookup = await lookupTariffMatches(hsCodeInput, originCountry, claimPreference, resolvedLocale);
 
   if (!lookup.ok) {
     return lookup;
@@ -255,20 +276,20 @@ export async function resolveTariff(
   if (lookup.exactMatch) {
     return {
       ok: true,
-      tariff: toResolution(lookup.exactMatch, lookup.chapterUrl),
+      tariff: toResolution(lookup.exactMatch, lookup.chapterUrl, resolvedLocale),
     };
   }
 
   if (lookup.matches.length === 1) {
     return {
       ok: true,
-      tariff: toResolution(lookup.matches[0], lookup.chapterUrl),
+      tariff: toResolution(lookup.matches[0], lookup.chapterUrl, resolvedLocale),
     };
   }
 
   return {
     ok: false,
-    error: "The HS code is ambiguous. Pick a more specific tariff item.",
+    error: localizeTariffError("The HS code is ambiguous. Pick a more specific tariff item.", resolvedLocale),
     matches: lookup.matches.slice(0, 12),
   };
 }
@@ -276,9 +297,11 @@ export async function resolveTariff(
 export async function lookupTariffResponse(
   hsCodeInput: string,
   originCountry: string,
-  claimPreference?: boolean
+  claimPreference?: boolean,
+  locale?: TariffLocale
 ): Promise<TariffLookupResponse> {
-  const lookup = await lookupTariffMatches(hsCodeInput, originCountry, claimPreference);
+  const resolvedLocale = normalizeTariffLocale(locale);
+  const lookup = await lookupTariffMatches(hsCodeInput, originCountry, claimPreference, resolvedLocale);
 
   if (!lookup.ok) {
     return lookup;
@@ -290,6 +313,6 @@ export async function lookupTariffResponse(
     treatment: lookup.treatment,
     chapterUrl: lookup.chapterUrl,
     matches: lookup.matches.slice(0, 12),
-    exactMatch: lookup.exactMatch ? toResolution(lookup.exactMatch, lookup.chapterUrl) : null,
+    exactMatch: lookup.exactMatch ? toResolution(lookup.exactMatch, lookup.chapterUrl, resolvedLocale) : null,
   };
 }

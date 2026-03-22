@@ -185,12 +185,13 @@ export async function estimateTariff(body: TariffEstimateRequest): Promise<Tarif
   });
 }
 
-export async function lookupTariffItems(params: { hs: string; originCountry?: string; claimPreference?: boolean }): Promise<TariffLookupResponse> {
+export async function lookupTariffItems(params: { hs: string; originCountry?: string; claimPreference?: boolean; locale?: "en" | "fr" }): Promise<TariffLookupResponse> {
   return apiFetch<TariffLookupResponse>("/tariffs/lookup", {
     params: {
       hs: params.hs,
       originCountry: params.originCountry,
       claimPreference: params.claimPreference,
+      locale: params.locale,
     },
   });
 }

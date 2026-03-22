@@ -23,6 +23,7 @@ export type TariffTreatmentCode =
   | "UST";
 
 export interface TariffEstimateRequest {
+  locale?: "en" | "fr";
   productName?: string;
   hsCode: string;
   originCountry: string;

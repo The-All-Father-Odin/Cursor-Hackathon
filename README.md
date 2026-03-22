@@ -158,6 +158,12 @@ data/
 | `claim_preference` | boolean | Persist preferential-treatment toggle |
 | `estimate` | boolean | Re-run the tariff estimate on refresh / shared links |
 
+### Tariff API Localization
+
+- `GET /api/tariffs/lookup` accepts `locale=en|fr`
+- `POST /api/tariffs/estimate` accepts `locale` in the JSON body
+- localized responses cover validation errors, estimate warnings/notes, and freight source labels
+
 ---
 
 ## Getting Started

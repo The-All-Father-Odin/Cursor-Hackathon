@@ -4,6 +4,12 @@ import { calculateImportedCosts } from "@/lib/tariff/calculate";
 import { resolveTariff } from "@/lib/tariff/cbsa";
 import { getCadFxRate } from "@/lib/tariff/fx";
 import { resolveFreightQuote } from "@/lib/tariff/freight";
+import {
+  getTariffEstimateMessages,
+  localizeFreightQuote,
+  localizeTariffError,
+  normalizeTariffLocale,
+} from "@/lib/tariff/messages";
 import type { TariffEstimateFailureResponse, TariffEstimateRequest, TariffEstimateSuccessResponse } from "@/types/tariff";
 
 function invalidRequest(error: string): TariffEstimateFailureResponse {
@@ -11,26 +17,29 @@ function invalidRequest(error: string): TariffEstimateFailureResponse {
 }
 
 export async function POST(request: NextRequest) {
+  let locale = normalizeTariffLocale();
   try {
     const body = (await request.json()) as Partial<TariffEstimateRequest>;
+    locale = normalizeTariffLocale(body.locale);
+    const copy = getTariffEstimateMessages(locale);
     const invoiceValue = Number(body.invoiceValue);
     const invoiceCurrency = typeof body.invoiceCurrency === "string" ? body.invoiceCurrency.trim().toUpperCase() : "CAD";
     const shipmentMode = body.shipmentMode ?? "manual";
     const manualFreightCad = Number(body.manualFreightCad ?? 0);
 
     if (!body.hsCode?.trim()) {
-      return NextResponse.json(invalidRequest("Enter an HS code."));
+      return NextResponse.json(invalidRequest(copy.invalidRequest.enterHsCode));
     }
 
     if (!body.originCountry?.trim()) {
-      return NextResponse.json(invalidRequest("Select an origin country."));
+      return NextResponse.json(invalidRequest(copy.invalidRequest.selectOriginCountry));
     }
 
     if (!Number.isFinite(invoiceValue) || invoiceValue <= 0) {
-      return NextResponse.json(invalidRequest("Enter a valid invoice value."));
+      return NextResponse.json(invalidRequest(copy.invalidRequest.enterValidInvoiceValue));
     }
 
-    const tariffResult = await resolveTariff(body.hsCode, body.originCountry, body.claimPreference);
+    const tariffResult = await resolveTariff(body.hsCode, body.originCountry, body.claimPreference, locale);
     if (!tariffResult.ok) {
       return NextResponse.json(tariffResult, { status: 422 });
     }
@@ -50,16 +59,17 @@ export async function POST(request: NextRequest) {
       parcelWidthCm: body.parcelWidthCm,
       parcelHeightCm: body.parcelHeightCm,
     });
-    const warnings = [...freight.warnings];
+    const localizedFreight = localizeFreightQuote(freight, locale);
+    const warnings = [...localizedFreight.warnings];
 
     if (tariffResult.tariff.rate.kind === "complex") {
-      warnings.push(`This tariff uses a complex rate formula (${tariffResult.tariff.rate.text}). The calculator cannot derive a precise duty amount yet.`);
+      warnings.push(copy.complexRateWarning(tariffResult.tariff.rate.text));
     }
 
     const costs = calculateImportedCosts({
       invoiceCad,
       tariffRate: tariffResult.tariff.rate,
-      freightCad: freight.amountCad,
+      freightCad: localizedFreight.amountCad,
     });
 
     let supplierCount: number | undefined;
@@ -71,9 +81,9 @@ export async function POST(request: NextRequest) {
         fields: "supplier_id,business_name",
       });
       supplierCount = domesticResults.count;
-      notes.push(`Found ${domesticResults.count.toLocaleString()} matching suppliers in the SourceLocal directory for this product query.`);
+      notes.push(copy.matchingSuppliersFound(domesticResults.count));
     } else {
-      notes.push("Add a product name to also estimate how many matching Canadian suppliers exist in the SourceLocal directory.");
+      notes.push(copy.addProductNameNote);
     }
 
     const response: TariffEstimateSuccessResponse = {
@@ -96,12 +106,12 @@ export async function POST(request: NextRequest) {
         parcelHeightCm: body.parcelHeightCm,
       },
       fx,
-      freight,
+      freight: localizedFreight,
       tariff: tariffResult.tariff,
       costs,
       domesticComparison: {
         mode: "rfq",
-        source: "SourceLocal supplier directory",
+        source: copy.sourceLocalSupplierDirectory,
         confidence: "low",
         supplierCount,
       },
@@ -111,9 +121,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? localizeTariffError(error.message, locale)
+        : localizeTariffError("Tariff estimate failed.", locale);
     return NextResponse.json({
       ok: false,
-      error: error instanceof Error ? error.message : "Tariff estimate failed.",
+      error: message,
     } satisfies TariffEstimateFailureResponse, { status: 500 });
   }
 }

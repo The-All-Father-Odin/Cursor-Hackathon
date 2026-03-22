@@ -382,6 +382,7 @@ function TariffsPageInner() {
           hs: hsCode,
           originCountry,
           claimPreference,
+          locale,
         });
         if (!cancelled) {
           setLookupResult(response);
@@ -430,6 +431,7 @@ function TariffsPageInner() {
 
     try {
       const response = await estimateTariff({
+        locale,
         productName: productName.trim() || undefined,
         hsCode,
         originCountry,
