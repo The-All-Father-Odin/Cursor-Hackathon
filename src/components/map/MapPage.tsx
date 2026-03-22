@@ -13,6 +13,7 @@ import {
 import { useLocale } from "@/hooks/useLocale";
 import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 import { buildReturnToPath } from "@/lib/navigation";
+import MapPageSkeleton from "@/components/map/MapPageSkeleton";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
@@ -419,11 +420,7 @@ function MapPageContent() {
 export default function MapPage() {
   return (
     <Suspense
-      fallback={
-        <div className="flex flex-1 items-center justify-center bg-slate-100" style={{ height: "calc(100vh - 64px)" }}>
-          <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      }
+      fallback={<MapPageSkeleton />}
     >
       <MapPageContent />
     </Suspense>

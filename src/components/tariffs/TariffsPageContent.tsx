@@ -18,6 +18,7 @@ import { estimateTariff, lookupTariffItems } from "@/lib/api";
 import { useLocale } from "@/hooks/useLocale";
 import { ORIGIN_OPTIONS } from "@/lib/tariff/treatments";
 import type { TariffEstimateResponse, TariffLookupResponse, TariffMatchCandidate } from "@/types/tariff";
+import TariffsPageSkeleton from "@/components/tariffs/TariffsPageSkeleton";
 
 function formatCurrency(amount: number | null, locale: "en" | "fr", unavailable: string) {
   if (amount == null) return unavailable;
@@ -966,11 +967,7 @@ function TariffsPageInner() {
 export default function TariffsPageContent() {
   return (
     <Suspense
-      fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      }
+      fallback={<TariffsPageSkeleton />}
     >
       <TariffsPageInner />
     </Suspense>

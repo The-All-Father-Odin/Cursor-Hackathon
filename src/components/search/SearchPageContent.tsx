@@ -31,6 +31,7 @@ import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import { shortlistSupplierFromApi } from "@/lib/shortlists";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
+import SearchPageSkeleton from "@/components/search/SearchPageSkeleton";
 
 const LIMIT = 20;
 
@@ -614,11 +615,7 @@ function SearchContent() {
 export default function SearchPageContent() {
   return (
     <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-maple border-t-transparent" />
-        </div>
-      }
+      fallback={<SearchPageSkeleton />}
     >
       <SearchContent />
     </Suspense>
