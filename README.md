@@ -206,6 +206,7 @@ Important variables:
 
 | Variable | Purpose |
 |---|---|
+| `NEXT_PUBLIC_SITE_URL` | Public site origin used for canonical metadata, robots, and sitemap generation |
 | `CBSA_TARIFF_YEAR` | Controls which CBSA tariff year the importer / resolver targets |
 | `FEDEX_CLIENT_ID` | FedEx OAuth client ID |
 | `FEDEX_CLIENT_SECRET` | FedEx OAuth client secret |
