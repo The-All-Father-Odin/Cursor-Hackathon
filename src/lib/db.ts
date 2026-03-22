@@ -1,7 +1,7 @@
 import "server-only";
 
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import suppliersData from "@/data/suppliers-db.json";
 import sourcesData from "@/data/sources-db.json";
 
@@ -13,7 +13,7 @@ type Backend =
   | { kind: "sqlite"; db: SQLiteDatabase; databasePath: string }
   | { kind: "json"; suppliers: SupplierRow[]; sources: SourceRow[]; reason: string };
 
-const DEFAULT_DATABASE_PATH = fileURLToPath(new URL("../../data/odbus-subset.sqlite", import.meta.url));
+const DEFAULT_DATABASE_PATH = join(/* turbopackIgnore: true */ process.cwd(), "data", "odbus-subset.sqlite");
 const FORCE_JSON = process.env.SOURCELOCAL_FORCE_JSON === "true";
 
 const fallbackSuppliers: SupplierRow[] = (suppliersData as SupplierRow[]).map(normalizeSupplierRow);
