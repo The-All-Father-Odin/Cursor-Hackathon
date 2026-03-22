@@ -8,6 +8,7 @@ import { NAICS_CATEGORIES } from "@/data/mock-suppliers";
 import { getStats, searchSuppliers } from "@/lib/api";
 import type { StatsResponse, ApiSupplier } from "@/lib/api";
 import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
+import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import {
   Search,
   MapPin,
@@ -88,6 +89,7 @@ const CAPACITY_TIER_STYLES: Record<string, string> = {
 export function LandingPage() {
   const { t, locale, getLocalePath } = useLocale();
   const router = useRouter();
+  const supplierReturnTo = buildReturnToPath("/");
   const [query, setQuery] = useState("");
   const [stats, setStats] = useState<StatsResponse["stats"] | null>(null);
   const [featuredSuppliers, setFeaturedSuppliers] = useState<ApiSupplier[]>([]);
@@ -421,7 +423,9 @@ export function LandingPage() {
                 return (
                   <Link
                     key={supplier.supplier_id}
-                    href={`${getLocalePath("/search")}?query=${encodeURIComponent(supplier.business_name)}`}
+                    href={getLocalePath(
+                      buildSupplierProfilePath(supplier.supplier_id, supplierReturnTo)
+                    )}
                     className="group flex flex-col bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-0.5 hover:border-maple/20 transition-all duration-200"
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">

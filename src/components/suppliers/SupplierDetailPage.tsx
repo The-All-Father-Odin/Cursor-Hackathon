@@ -37,6 +37,7 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
           supplierNotFound: "Fournisseur introuvable",
           supplierNotFoundBody: "Ce fournisseur est introuvable.",
           backToSearch: "Retour à la recherche",
+          backToHome: "Retour à l’accueil",
           backToMap: "Retour à la carte",
           backToShortlists: "Retour aux listes",
           alsoKnownAs: "Aussi connu sous le nom de :",
@@ -74,6 +75,7 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
           supplierNotFound: "Supplier Not Found",
           supplierNotFoundBody: "This supplier could not be found.",
           backToSearch: "Back to Search",
+          backToHome: "Back to Home",
           backToMap: "Back to Map",
           backToShortlists: "Back to Shortlists",
           alsoKnownAs: "Also known as:",
@@ -112,7 +114,9 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
   const normalizedReturnTo = normalizeReturnToPath(searchParams.get("returnTo"));
   const backHref = getLocalePath(normalizedReturnTo ?? "/search");
   const backLabel =
-    normalizedReturnTo?.startsWith("/map")
+    normalizedReturnTo === "/"
+      ? copy.backToHome
+      : normalizedReturnTo?.startsWith("/map")
       ? copy.backToMap
       : normalizedReturnTo?.startsWith("/shortlists")
       ? copy.backToShortlists
