@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
 
 import MapPage from "@/components/map/MapPage";
+import { buildMapPageMetadata } from "@/lib/route-metadata";
 
-export const metadata: Metadata = {
-  title: "Canadian Supplier Map | SourceLocal",
-  description:
-    "Explore Canadian suppliers on an interactive map with province filters, shared deep links, and focused supplier views.",
-  alternates: {
-    canonical: "/en/map",
-    languages: {
-      en: "/en/map",
-      fr: "/fr/map",
-    },
-  },
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  return buildMapPageMetadata("en", await searchParams);
+}
 
 export default function EnMapPage() {
   return <MapPage />;

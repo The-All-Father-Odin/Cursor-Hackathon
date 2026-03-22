@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
 
 import SearchPageContent from "@/components/search/SearchPageContent";
+import { buildSearchPageMetadata } from "@/lib/route-metadata";
 
-export const metadata: Metadata = {
-  title: "Rechercher des fournisseurs canadiens | SourceLocal",
-  description:
-    "Recherchez plus de 50 000 fournisseurs canadiens par produit, province, secteur et capacité.",
-  alternates: {
-    canonical: "/fr/search",
-    languages: {
-      en: "/en/search",
-      fr: "/fr/search",
-    },
-  },
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  return buildSearchPageMetadata("fr", await searchParams);
+}
 
 export default function SearchPage() {
   return <SearchPageContent />;

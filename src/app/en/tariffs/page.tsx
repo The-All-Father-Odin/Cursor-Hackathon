@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
 
 import TariffsPageContent from "@/components/tariffs/TariffsPageContent";
+import { buildTariffsPageMetadata } from "@/lib/route-metadata";
 
-export const metadata: Metadata = {
-  title: "Tariff & Landed-Cost Context | SourceLocal",
-  description:
-    "Compare the cost of importing vs. buying Canadian. See when domestic sourcing is already price-competitive after duties.",
-  alternates: {
-    canonical: "/en/tariffs",
-    languages: {
-      en: "/en/tariffs",
-      fr: "/fr/tariffs",
-    },
-  },
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  return buildTariffsPageMetadata("en", await searchParams);
+}
 
 export default function TariffsPage() {
   return <TariffsPageContent />;
