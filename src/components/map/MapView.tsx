@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
 
@@ -15,18 +16,24 @@ function getScoreColor(score: number): string {
 interface MapControllerProps {
   suppliers: ApiSupplier[];
   selectedSupplierId?: string | null;
+  markerRefs: React.MutableRefObject<Map<string, L.CircleMarker>>;
 }
 
-function MapController({ suppliers, selectedSupplierId }: MapControllerProps) {
+function MapController({ suppliers, selectedSupplierId, markerRefs }: MapControllerProps) {
   const map = useMap();
 
   useEffect(() => {
     if (!selectedSupplierId) return;
     const supplier = suppliers.find((entry) => entry.supplier_id === selectedSupplierId);
     if (supplier?.latitude != null && supplier?.longitude != null) {
-      map.flyTo([supplier.latitude, supplier.longitude], 12, { duration: 1 });
+      map.flyTo([supplier.latitude, supplier.longitude], 12, { duration: 0.8 });
+      // Open the popup after fly animation completes
+      setTimeout(() => {
+        const marker = markerRefs.current.get(selectedSupplierId);
+        if (marker) marker.openPopup();
+      }, 900);
     }
-  }, [selectedSupplierId, suppliers, map]);
+  }, [selectedSupplierId, suppliers, map, markerRefs]);
 
   return null;
 }
@@ -44,6 +51,16 @@ export default function MapView({
   selectedSupplierId,
   onSupplierClick,
 }: MapViewProps) {
+  const markerRefs = useRef<Map<string, L.CircleMarker>>(new Map());
+
+  const setMarkerRef = useCallback((id: string, ref: L.CircleMarker | null) => {
+    if (ref) {
+      markerRefs.current.set(id, ref);
+    } else {
+      markerRefs.current.delete(id);
+    }
+  }, []);
+
   const labels =
     locale === "fr"
       ? {
@@ -73,7 +90,7 @@ export default function MapView({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapController suppliers={suppliers} selectedSupplierId={selectedSupplierId} />
+      <MapController suppliers={suppliers} selectedSupplierId={selectedSupplierId} markerRefs={markerRefs} />
       {geoSuppliers.map((supplier) => {
         const { score } = deriveCanadianConfidence(supplier);
         const color = getScoreColor(score);
@@ -82,6 +99,7 @@ export default function MapView({
         return (
           <CircleMarker
             key={supplier.supplier_id}
+            ref={(ref) => setMarkerRef(supplier.supplier_id, ref)}
             center={[supplier.latitude, supplier.longitude]}
             radius={isSelected ? 11 : 8}
             pathOptions={{
