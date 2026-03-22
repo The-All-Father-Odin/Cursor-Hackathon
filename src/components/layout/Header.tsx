@@ -1,20 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useLocale } from "@/hooks/useLocale";
 import { Search, MapPin, BarChart3, Bookmark, Menu, X, Leaf } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
+
+function LocaleSwitchLink({
+  href,
+  className,
+  children,
+  onClick,
+}: {
+  href: string;
+  className: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const nextHref = query ? `${href}?${query}` : href;
+
+  return (
+    <Link href={nextHref} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
 
 export function Header() {
   const { t, getLocalePath, getAltLocalePath, altLocale, locale } = useLocale();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [querySuffix, setQuerySuffix] = useState("");
   const switchLanguageLabel =
     locale === "fr"
       ? `Passer à ${altLocale === "fr" ? "français" : "anglais"}`
       : `Switch to ${altLocale === "fr" ? "French" : "English"}`;
+  const mobileMenuLabel =
+    locale === "fr" ? "Ouvrir ou fermer le menu" : "Open or close menu";
 
   const navItems = [
     { href: "/search", label: t("nav.search"), icon: Search },
@@ -27,12 +50,7 @@ export function Header() {
     const localizedHref = getLocalePath(href);
     return pathname === localizedHref || pathname.startsWith(`${localizedHref}/`);
   };
-
-  useEffect(() => {
-    setQuerySuffix(window.location.search || "");
-  }, [pathname]);
-
-  const altLocalePath = `${getAltLocalePath()}${querySuffix}`;
+  const altLocalePath = getAltLocalePath();
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60">
@@ -77,12 +95,23 @@ export function Header() {
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
-            <Link
-              href={altLocalePath}
-              className="hidden sm:flex items-center px-3 py-1.5 text-sm font-medium text-slate-500 rounded-lg hover:bg-slate-100 transition-colors"
+            <Suspense
+              fallback={
+                <Link
+                  href={altLocalePath}
+                  className="hidden sm:flex items-center px-3 py-1.5 text-sm font-medium text-slate-500 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  {altLocale.toUpperCase()}
+                </Link>
+              }
             >
-              {altLocale.toUpperCase()}
-            </Link>
+              <LocaleSwitchLink
+                href={altLocalePath}
+                className="hidden sm:flex items-center px-3 py-1.5 text-sm font-medium text-slate-500 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                {altLocale.toUpperCase()}
+              </LocaleSwitchLink>
+            </Suspense>
             <Link
               href={getLocalePath("/search")}
               className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-maple rounded-xl hover:bg-maple-dark transition-colors shadow-sm"
@@ -93,6 +122,9 @@ export function Header() {
             <button
               className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
               onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={mobileMenuLabel}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-nav"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -101,7 +133,7 @@ export function Header() {
 
         {/* Mobile Nav */}
         {mobileOpen && (
-          <div className="md:hidden pb-4 border-t border-slate-100 mt-2 pt-3">
+          <div id="mobile-nav" className="md:hidden pb-4 border-t border-slate-100 mt-2 pt-3">
             {navItems.map((item) => (
               (() => {
                 const isActive = isActivePath(item.href);
@@ -124,13 +156,25 @@ export function Header() {
               })()
             ))}
             <div className="mt-2 pt-2 border-t border-slate-100">
-              <Link
-                href={altLocalePath}
-                className="flex items-center px-3 py-2.5 text-sm text-slate-500"
-                onClick={() => setMobileOpen(false)}
+              <Suspense
+                fallback={
+                  <Link
+                    href={altLocalePath}
+                    className="flex items-center px-3 py-2.5 text-sm text-slate-500"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {switchLanguageLabel}
+                  </Link>
+                }
               >
-                {switchLanguageLabel}
-              </Link>
+                <LocaleSwitchLink
+                  href={altLocalePath}
+                  className="flex items-center px-3 py-2.5 text-sm text-slate-500"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {switchLanguageLabel}
+                </LocaleSwitchLink>
+              </Suspense>
             </div>
           </div>
         )}
