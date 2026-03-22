@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { LocaleHtmlSync } from "@/components/LocaleHtmlSync";
@@ -13,12 +13,21 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteOrigin()),
+  manifest: "/manifest.webmanifest",
   title: {
     default: "SourceLocal — Find Canadian Suppliers",
     template: "%s",
   },
   description: "Discover, evaluate, and connect with Canadian suppliers. Replace the default reflex of sourcing internationally with a fast, data-driven path to buying Canadian.",
   applicationName: "SourceLocal",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+  },
   alternates: {
     languages: {
       en: "/en",
@@ -41,6 +50,11 @@ export const metadata: Metadata = {
     description:
       "Discover, evaluate, and connect with Canadian suppliers. Replace the default reflex of sourcing internationally with a fast, data-driven path to buying Canadian.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#d80621",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
