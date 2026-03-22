@@ -4,6 +4,7 @@ import type { ApiSupplier } from "@/lib/api";
 import { getSupplierDetail } from "@/lib/db";
 import { getProvinceLabel } from "@/lib/i18n";
 import { buildSocialMetadata } from "@/lib/route-metadata";
+import { buildSupplierStructuredData, JsonLdScript } from "@/lib/structured-data";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -12,7 +13,7 @@ type PageProps = {
 async function getSupplierSummary(id: string) {
   const detail = await getSupplierDetail(
     id,
-    "supplier_id,business_name,brief_info,city,province_code,province_name,business_sector,naics_description"
+    "supplier_id,business_name,alt_business_name,brief_info,business_sector,business_subsector,business_description,city,province_code,province_name,postal_code,full_address,latitude,longitude,derived_naics,naics_description,source_provider,status"
   );
 
   return detail?.row as ApiSupplier | undefined;
@@ -72,6 +73,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function EnSupplierDetailPage() {
-  return <SupplierDetailPage />;
+export default async function EnSupplierDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const supplier = await getSupplierSummary(id);
+
+  return (
+    <>
+      {supplier ? <JsonLdScript data={buildSupplierStructuredData("en", supplier)} /> : null}
+      <SupplierDetailPage />
+    </>
+  );
 }

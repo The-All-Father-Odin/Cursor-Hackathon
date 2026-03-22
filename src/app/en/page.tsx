@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { LandingPage } from "@/components/LandingPage";
 import { buildSocialMetadata } from "@/lib/route-metadata";
+import { buildHomeStructuredData, JsonLdScript } from "@/lib/structured-data";
 
 export const metadata: Metadata = {
   title: "Find Canadian Suppliers | SourceLocal",
@@ -23,5 +24,10 @@ export const metadata: Metadata = {
 };
 
 export default function EnHomePage() {
-  return <LandingPage />;
+  return (
+    <>
+      <JsonLdScript data={buildHomeStructuredData("en")} />
+      <LandingPage />
+    </>
+  );
 }
