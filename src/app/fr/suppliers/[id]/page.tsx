@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import SupplierDetailPage from "@/components/suppliers/SupplierDetailPage";
 import type { ApiSupplier } from "@/lib/api";
 import { getSupplierDetail } from "@/lib/db";
@@ -75,12 +76,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function FrSupplierDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const supplier = await getSupplierSummary(id);
+  const detail = await getSupplierDetail(id);
+  const supplier = detail?.row as ApiSupplier | undefined;
+
+  if (!supplier) {
+    notFound();
+  }
 
   return (
     <>
       {supplier ? <JsonLdScript data={buildSupplierStructuredData("fr", supplier)} /> : null}
-      <SupplierDetailPage />
+      <SupplierDetailPage initialSupplier={supplier} />
     </>
   );
 }

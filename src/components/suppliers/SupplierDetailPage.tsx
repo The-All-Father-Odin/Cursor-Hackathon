@@ -21,7 +21,11 @@ import {
   Map,
 } from "lucide-react";
 
-export default function SupplierDetailPage() {
+type SupplierDetailPageProps = {
+  initialSupplier?: ApiSupplier | null;
+};
+
+export default function SupplierDetailPage({ initialSupplier = null }: SupplierDetailPageProps) {
   const params = useParams();
   const { getLocalePath, locale } = useLocale();
   const copy =
@@ -97,13 +101,33 @@ export default function SupplierDetailPage() {
           viewOnMap: "View on Map",
         };
 
-  const [supplier, setSupplier] = useState<ApiSupplier | null>(null);
-  const [loading, setLoading] = useState(true);
+  const routeSupplierId = typeof params.id === "string" ? params.id : undefined;
+  const supplierId = routeSupplierId ?? initialSupplier?.supplier_id ?? "";
+
+  const [supplier, setSupplier] = useState<ApiSupplier | null>(initialSupplier);
+  const [loading, setLoading] = useState(!initialSupplier);
   const [error, setError] = useState<string | null>(null);
 
-  const supplierId = params.id as string;
+  useEffect(() => {
+    setSupplier(initialSupplier);
+    setLoading(!initialSupplier);
+    setError(null);
+  }, [initialSupplier]);
 
   useEffect(() => {
+    if (!supplierId) {
+      setSupplier(null);
+      setLoading(false);
+      return;
+    }
+
+    if (initialSupplier?.supplier_id === supplierId) {
+      setSupplier(initialSupplier);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     async function fetchSupplier() {
       setLoading(true);
       setError(null);
@@ -116,8 +140,8 @@ export default function SupplierDetailPage() {
         setLoading(false);
       }
     }
-    if (supplierId) fetchSupplier();
-  }, [copy.loadError, supplierId]);
+    fetchSupplier();
+  }, [copy.loadError, initialSupplier, supplierId]);
 
   if (loading) {
     return (
