@@ -217,7 +217,6 @@ export function LandingPage() {
           {/* Headline */}
           <h1
             className="text-5xl sm:text-7xl md:text-[5.25rem] font-black tracking-tight text-slate-900 leading-[1.05] mb-3 animate-fade-in-up stagger-2"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             {t("hero.title")}
           </h1>
@@ -225,7 +224,6 @@ export function LandingPage() {
           {/* Subtitle in maple */}
           <p
             className="text-3xl sm:text-5xl md:text-[3.5rem] font-bold text-maple tracking-tight leading-none mb-8 animate-fade-in-up stagger-3"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             {t("hero.subtitle")}
           </p>
@@ -305,7 +303,6 @@ export function LandingPage() {
                 <stat.icon className="w-5 h-5 text-gold mb-3 opacity-75" />
                 <div
                   className="text-3xl sm:text-4xl font-black text-white leading-none mb-1.5"
-                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {stat.value}
                 </div>
@@ -324,7 +321,6 @@ export function LandingPage() {
           <div className="text-center mb-16">
             <h2
               className="text-4xl sm:text-5xl font-black text-slate-900 mb-4 tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
             >
               {t("features.title")}
             </h2>
@@ -348,7 +344,6 @@ export function LandingPage() {
 
                 <h3
                   className="text-xl font-bold text-slate-900 mb-3"
-                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {t(feature.titleKey)}
                 </h3>
@@ -367,7 +362,6 @@ export function LandingPage() {
           <div className="text-center mb-14">
             <h2
               className="text-4xl sm:text-5xl font-black text-slate-900 mb-4 tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
             >
               {browseCategoryLabel}
             </h2>
@@ -407,7 +401,6 @@ export function LandingPage() {
             <div className="text-center mb-14">
               <h2
                 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4 tracking-tight"
-                style={{ fontFamily: "var(--font-display)" }}
               >
                 {locale === "fr" ? "Entreprises en vedette" : "Featured Businesses"}
               </h2>
@@ -444,7 +437,6 @@ export function LandingPage() {
 
                     <h3
                       className="text-[15px] font-bold text-slate-900 leading-snug mb-1 group-hover:text-maple transition-colors line-clamp-2"
-                      style={{ fontFamily: "var(--font-display)" }}
                     >
                       {supplier.business_name}
                     </h3>
@@ -516,7 +508,6 @@ export function LandingPage() {
 
           <h2
             className="text-4xl sm:text-6xl font-black text-white tracking-tight mb-6 leading-tight"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             {ctaHeadline}
           </h2>
