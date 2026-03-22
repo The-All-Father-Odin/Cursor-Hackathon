@@ -25,6 +25,56 @@ function getBaseAlternates(locale: Locale, path: string): Metadata["alternates"]
   };
 }
 
+function getOpenGraphLocale(locale: Locale) {
+  return locale === "fr" ? "fr_CA" : "en_CA";
+}
+
+function getAlternateOpenGraphLocale(locale: Locale) {
+  return locale === "fr" ? "en_CA" : "fr_CA";
+}
+
+function buildPathWithQuery(path: string, searchParams: SearchParamRecord) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (Array.isArray(value)) {
+      value.filter(Boolean).forEach((entry) => params.append(key, entry));
+      continue;
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      params.set(key, value);
+    }
+  }
+
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+export function buildSocialMetadata(
+  locale: Locale,
+  title: string,
+  description: string,
+  path: string
+): Pick<Metadata, "openGraph" | "twitter"> {
+  return {
+    openGraph: {
+      type: "website",
+      siteName: "SourceLocal",
+      title,
+      description,
+      url: path,
+      locale: getOpenGraphLocale(locale),
+      alternateLocale: [getAlternateOpenGraphLocale(locale)],
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
+
 function noindexFollowRobots(): Metadata["robots"] {
   return {
     index: false,
@@ -102,12 +152,14 @@ export function buildSearchPageMetadata(
           detailParts.length ? ` with ${detailParts.join(", ")} filters` : ""
         }.`
     : defaultDescription;
+  const sharePath = buildPathWithQuery(`/${locale}/search`, searchParams);
 
   return {
     title,
     description,
     alternates: getBaseAlternates(locale, "/search"),
     robots: hasDeepLinkState ? noindexFollowRobots() : undefined,
+    ...buildSocialMetadata(locale, title, description, sharePath),
   };
 }
 
@@ -166,12 +218,14 @@ export function buildMapPageMetadata(
       : `Explore Canadian suppliers on an interactive map${
           query ? ` for ${query}` : ""
         }${province ? ` in ${province}` : ""} with ${mapMode}.`;
+  const sharePath = buildPathWithQuery(`/${locale}/map`, searchParams);
 
   return {
     title,
     description,
     alternates: getBaseAlternates(locale, "/map"),
     robots: hasDeepLinkState ? noindexFollowRobots() : undefined,
+    ...buildSocialMetadata(locale, title, description, sharePath),
   };
 }
 
@@ -224,11 +278,13 @@ export function buildTariffsPageMetadata(
       : `Compare the cost of importing${
           product ? ` ${product}` : ""
         }${origin ? ` from ${origin}` : ""}${hs ? ` with HS code ${hs}` : ""}.`;
+  const sharePath = buildPathWithQuery(`/${locale}/tariffs`, searchParams);
 
   return {
     title,
     description,
     alternates: getBaseAlternates(locale, "/tariffs"),
     robots: hasDeepLinkState ? noindexFollowRobots() : undefined,
+    ...buildSocialMetadata(locale, title, description, sharePath),
   };
 }

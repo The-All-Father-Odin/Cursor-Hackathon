@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { LandingPage } from "@/components/LandingPage";
+import { buildSocialMetadata } from "@/lib/route-metadata";
 
 export const metadata: Metadata = {
   title: "Find Canadian Suppliers | SourceLocal",
@@ -13,6 +14,12 @@ export const metadata: Metadata = {
       fr: "/fr",
     },
   },
+  ...buildSocialMetadata(
+    "en",
+    "Find Canadian Suppliers | SourceLocal",
+    "Discover, evaluate, and connect with Canadian suppliers through a bilingual search, map, and tariff-awareness workflow.",
+    "/en"
+  ),
 };
 
 export default function EnHomePage() {

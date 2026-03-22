@@ -3,6 +3,7 @@ import SupplierDetailPage from "@/components/suppliers/SupplierDetailPage";
 import type { ApiSupplier } from "@/lib/api";
 import { getSupplierDetail } from "@/lib/db";
 import { getProvinceLabel } from "@/lib/i18n";
+import { buildSocialMetadata } from "@/lib/route-metadata";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -32,6 +33,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           fr: `/fr/suppliers/${id}`,
         },
       },
+      ...buildSocialMetadata(
+        "en",
+        "Supplier not found | SourceLocal",
+        "This Canadian supplier profile could not be found.",
+        `/en/suppliers/${id}`
+      ),
     };
   }
 
@@ -54,6 +61,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         fr: `/fr/suppliers/${id}`,
       },
     },
+    ...buildSocialMetadata(
+      "en",
+      `${supplier.business_name} | SourceLocal`,
+      `View supplier details for ${supplier.business_name}${
+        location ? ` in ${location}` : ""
+      }. ${summary}.`,
+      `/en/suppliers/${id}`
+    ),
   };
 }
 
