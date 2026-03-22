@@ -9,6 +9,7 @@ import { getProvinceLabel } from "@/lib/i18n";
 import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import { useShortlists } from "@/hooks/useShortlists";
 import { deserializeShortlist, getShortlistLabel } from "@/lib/shortlists";
+import ShortlistDetailSkeleton from "@/components/shortlists/ShortlistDetailSkeleton";
 
 export default function ShortlistDetailPage() {
   const { locale, getLocalePath } = useLocale();
@@ -23,11 +24,7 @@ export default function ShortlistDetailPage() {
   const title = shortlist ? getShortlistLabel(shortlist, locale) : locale === "fr" ? "Liste introuvable" : "Shortlist not found";
 
   if (!ready && !embeddedShortlist) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center text-slate-500">
-        {locale === "fr" ? "Chargement de la liste…" : "Loading shortlist…"}
-      </div>
-    );
+    return <ShortlistDetailSkeleton />;
   }
 
   if (!shortlist) {

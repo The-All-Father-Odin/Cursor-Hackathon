@@ -20,6 +20,7 @@ import { getCapacityTierLabel, getProvinceLabel } from "@/lib/i18n";
 import { buildReturnToPath, buildSupplierProfilePath } from "@/lib/navigation";
 import { useShortlists } from "@/hooks/useShortlists";
 import { DEFAULT_SHORTLIST_ID, getShortlistLabel, serializeShortlist } from "@/lib/shortlists";
+import ShortlistsPageSkeleton from "@/components/shortlists/ShortlistsPageSkeleton";
 
 function exportCSV(locale: "en" | "fr", shortlistName: string, suppliers: Array<{
   id: string;
@@ -130,11 +131,7 @@ export function ShortlistsPage() {
   };
 
   if (!ready) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center text-slate-500">
-        {labels.loading}
-      </div>
-    );
+    return <ShortlistsPageSkeleton />;
   }
 
   return (
