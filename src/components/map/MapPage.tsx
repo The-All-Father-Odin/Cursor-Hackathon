@@ -17,17 +17,54 @@ import MapPageSkeleton from "@/components/map/MapPageSkeleton";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
-  loading: () => (
-    <div className="flex-1 flex items-center justify-center bg-slate-100">
-      <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  ),
+  loading: () => <MapCanvasSkeleton />,
 });
 
 function getScoreDotColor(score: number) {
   if (score >= 70) return "bg-emerald-500";
   if (score >= 50) return "bg-amber-500";
   return "bg-red-500";
+}
+
+function MapCanvasSkeleton() {
+  return (
+    <div className="flex-1 bg-slate-100 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(220,38,38,0.08),transparent_25%),radial-gradient(circle_at_80%_30%,rgba(59,130,246,0.08),transparent_25%)]" />
+      <div className="absolute inset-6 rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-sm" />
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div
+          key={index}
+          className="absolute w-4 h-4 rounded-full bg-maple/70 animate-pulse"
+          style={{
+            left: `${14 + (index * 11) % 70}%`,
+            top: `${18 + (index * 9) % 60}%`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MapSupplierListSkeleton() {
+  return (
+    <div className="p-3 space-y-2">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className="px-3 py-2.5 border-b border-slate-100">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-4 w-3/4 rounded bg-slate-200 animate-pulse" />
+              <div className="h-3 w-1/2 rounded bg-slate-100 animate-pulse" />
+              <div className="h-3 w-16 rounded bg-slate-100 animate-pulse" />
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="w-2 h-2 rounded-full bg-slate-200 animate-pulse" />
+              <div className="h-4 w-6 rounded bg-slate-100 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function MapPageContent() {
@@ -287,10 +324,7 @@ function MapPageContent() {
             {/* Supplier list */}
             <div className="flex-1 overflow-y-auto">
               {loading ? (
-                <div className="p-6 flex flex-col items-center justify-center text-slate-400">
-                  <div className="w-7 h-7 border-2 border-red-600 border-t-transparent rounded-full animate-spin mb-3" />
-                  <p className="text-sm">{copy.loading}</p>
-                </div>
+                <MapSupplierListSkeleton />
               ) : error ? (
                 <div className="p-4 text-center">
                   <p className="text-sm text-red-500 mb-3">{error}</p>
