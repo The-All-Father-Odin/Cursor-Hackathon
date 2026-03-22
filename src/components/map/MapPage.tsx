@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Filter, MapPin, Layers, Menu, X, Search, RefreshCw } from "lucide-react";
 import {
   searchSuppliers,
@@ -30,7 +30,10 @@ function getScoreDotColor(score: number) {
 
 function MapPageContent() {
   const { t, locale } = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const syncingFromUrlRef = useRef(true);
   const copy =
     locale === "fr"
       ? {
@@ -75,15 +78,42 @@ function MapPageContent() {
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    syncingFromUrlRef.current = true;
+
     const supplierId = searchParams.get("supplier_id") || "";
-    const query = searchParams.get("query") || "";
+    const query = searchParams.get("q") || searchParams.get("query") || "";
     const provinceParam = searchParams.get("province") || "";
+    const viewParam = searchParams.get("view");
+    const nextView = viewParam === "heatmap" ? "heatmap" : "pins";
 
     setSupplierIdFilter(supplierId);
     setSelectedId(supplierId || null);
     setSearchQuery(query);
     setProvince(provinceParam);
+    setViewMode(nextView);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (syncingFromUrlRef.current) {
+      syncingFromUrlRef.current = false;
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    if (supplierIdFilter) nextParams.set("supplier_id", supplierIdFilter);
+    if (searchQuery) nextParams.set("query", searchQuery);
+    if (province) nextParams.set("province", province);
+    if (viewMode !== "pins") nextParams.set("view", viewMode);
+
+    const nextQueryString = nextParams.toString();
+    const currentQueryString = searchParams.toString();
+    const nextUrl = nextQueryString ? `${pathname}?${nextQueryString}` : pathname;
+    const currentUrl = currentQueryString ? `${pathname}?${currentQueryString}` : pathname;
+
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [pathname, province, router, searchParams, searchQuery, supplierIdFilter, viewMode]);
 
   useEffect(() => {
     let cancelled = false;
