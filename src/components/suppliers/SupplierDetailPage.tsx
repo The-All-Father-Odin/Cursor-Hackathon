@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useLocale } from "@/hooks/useLocale";
 import { getSupplierDetail, ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
 import { getProvinceLabel } from "@/lib/i18n";
-import { normalizeReturnToPath } from "@/lib/navigation";
+import { getSupplierReturnTarget } from "@/lib/navigation";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
 import Link from "next/link";
@@ -111,14 +111,14 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
 
   const routeSupplierId = typeof params.id === "string" ? params.id : undefined;
   const supplierId = routeSupplierId ?? initialSupplier?.supplier_id ?? "";
-  const normalizedReturnTo = normalizeReturnToPath(searchParams.get("returnTo"));
-  const backHref = getLocalePath(normalizedReturnTo ?? "/search");
+  const returnTarget = getSupplierReturnTarget(searchParams.get("returnTo"));
+  const backHref = getLocalePath(returnTarget.href);
   const backLabel =
-    normalizedReturnTo === "/"
+    returnTarget.kind === "home"
       ? copy.backToHome
-      : normalizedReturnTo?.startsWith("/map")
+      : returnTarget.kind === "map"
       ? copy.backToMap
-      : normalizedReturnTo?.startsWith("/shortlists")
+      : returnTarget.kind === "shortlists"
       ? copy.backToShortlists
       : copy.backToSearch;
 

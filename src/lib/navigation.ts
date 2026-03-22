@@ -1,4 +1,5 @@
 const LOCALE_PREFIX_RE = /^\/(en|fr)(?=\/|$)/;
+export type SupplierReturnKind = "home" | "map" | "shortlists" | "search";
 
 export function buildReturnToPath(path: string, queryString?: string | null) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -36,4 +37,25 @@ export function buildSupplierProfilePath(supplierId: string, returnTo?: string |
   const params = new URLSearchParams();
   params.set("returnTo", normalizedReturnTo);
   return `${basePath}?${params.toString()}`;
+}
+
+export function getSupplierReturnTarget(returnTo?: string | null): {
+  href: string;
+  kind: SupplierReturnKind;
+} {
+  const normalizedReturnTo = normalizeReturnToPath(returnTo);
+
+  if (normalizedReturnTo === "/") {
+    return { href: "/", kind: "home" };
+  }
+
+  if (normalizedReturnTo?.startsWith("/map")) {
+    return { href: normalizedReturnTo, kind: "map" };
+  }
+
+  if (normalizedReturnTo?.startsWith("/shortlists")) {
+    return { href: normalizedReturnTo, kind: "shortlists" };
+  }
+
+  return { href: normalizedReturnTo ?? "/search", kind: "search" };
 }
