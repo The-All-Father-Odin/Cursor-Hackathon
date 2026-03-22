@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   MapPin,
@@ -144,6 +144,8 @@ function StatusBadge({ status }: { status: string }) {
 
 function SearchContent() {
   const { t, getLocalePath, locale } = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
   const copy =
     locale === "fr"
       ? {
@@ -173,6 +175,7 @@ function SearchContent() {
           clearIndustryFilter: "Clear industry filter",
         };
   const searchParams = useSearchParams();
+  const syncingFromUrlRef = useRef(true);
   const { isShortlisted, toggleDefaultSupplier } = useShortlists();
 
   const [query, setQuery] = useState("");
@@ -190,10 +193,41 @@ function SearchContent() {
 
   // Pre-fill query from URL params
   useEffect(() => {
+    syncingFromUrlRef.current = true;
+
+    const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
+    const nextPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam - 1 : 0;
+
     setNaics(searchParams.get("naics") || searchParams.get("category") || "");
     setQuery(searchParams.get("q") || searchParams.get("query") || "");
-    setPage(0);
+    setProvince(searchParams.get("province") || "");
+    setCapacity(searchParams.get("capacity") || "");
+    setPage(nextPage);
   }, [searchParams]);
+
+  // Keep URL in sync with current search state
+  useEffect(() => {
+    if (syncingFromUrlRef.current) {
+      syncingFromUrlRef.current = false;
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    if (query) nextParams.set("query", query);
+    if (naics) nextParams.set("naics", naics);
+    if (province) nextParams.set("province", province);
+    if (capacity) nextParams.set("capacity", capacity);
+    if (page > 0) nextParams.set("page", String(page + 1));
+
+    const nextQueryString = nextParams.toString();
+    const currentQueryString = searchParams.toString();
+    const nextUrl = nextQueryString ? `${pathname}?${nextQueryString}` : pathname;
+    const currentUrl = currentQueryString ? `${pathname}?${currentQueryString}` : pathname;
+
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [capacity, naics, page, pathname, province, query, router, searchParams]);
 
   // Fetch whenever filters or page change
   useEffect(() => {
