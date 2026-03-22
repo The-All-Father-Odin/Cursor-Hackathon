@@ -6,8 +6,12 @@ import { Search, MapPin, BarChart3, Bookmark, Menu, X, Leaf } from "lucide-react
 import { useState } from "react";
 
 export function Header() {
-  const { t, getLocalePath, getAltLocalePath, altLocale } = useLocale();
+  const { t, getLocalePath, getAltLocalePath, altLocale, locale } = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const switchLanguageLabel =
+    locale === "fr"
+      ? `Passer à ${altLocale === "fr" ? "français" : "anglais"}`
+      : `Switch to ${altLocale === "fr" ? "French" : "English"}`;
 
   const navItems = [
     { href: "/search", label: t("nav.search"), icon: Search },
@@ -91,7 +95,7 @@ export function Header() {
                 className="flex items-center px-3 py-2.5 text-sm text-slate-500"
                 onClick={() => setMobileOpen(false)}
               >
-                Switch to {altLocale === "fr" ? "Francais" : "English"}
+                {switchLanguageLabel}
               </Link>
             </div>
           </div>

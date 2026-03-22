@@ -72,6 +72,8 @@ export function ShortlistsPage() {
           create: "Créer",
           loading: "Chargement des listes…",
           copyLink: "Lien copié",
+          collapse: "Réduire",
+          expand: "Développer",
         }
       : {
           lists: "lists",
@@ -82,6 +84,8 @@ export function ShortlistsPage() {
           create: "Create",
           loading: "Loading shortlists…",
           copyLink: "Link copied",
+          collapse: "Collapse",
+          expand: "Expand",
         };
 
   const { shortlists, ready, createShortlist, deleteShortlist, removeSupplier } = useShortlists();
@@ -196,7 +200,7 @@ export function ShortlistsPage() {
                     <button
                       onClick={() => toggleExpand(shortlist.id)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex-shrink-0"
-                      aria-label={isExpanded ? "Collapse" : "Expand"}
+                      aria-label={isExpanded ? labels.collapse : labels.expand}
                     >
                       {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </button>
