@@ -144,6 +144,16 @@ data/
 | `limit` | integer | Max results (default: 20, max: 500) |
 | `offset` | integer | Pagination offset |
 
+### Map Deep-Link Parameters (`/en/map`, `/fr/map`)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `supplier_id` | string | Focus the map on an exact supplier-only view |
+| `selected` | string | Persist the currently selected supplier while keeping the broader result set |
+| `query` | string | Persist the current free-text filter |
+| `province` | string | Persist the current province filter |
+| `view` | string | `"pins"` or `"heatmap"` |
+
 ### Tariff Calculator Deep-Link Parameters (`/en/tariffs`, `/fr/tariffs`)
 
 | Parameter | Type | Description |

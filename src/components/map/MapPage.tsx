@@ -81,13 +81,14 @@ function MapPageContent() {
     syncingFromUrlRef.current = true;
 
     const supplierId = searchParams.get("supplier_id") || "";
+    const selectedParam = searchParams.get("selected") || "";
     const query = searchParams.get("q") || searchParams.get("query") || "";
     const provinceParam = searchParams.get("province") || "";
     const viewParam = searchParams.get("view");
     const nextView = viewParam === "heatmap" ? "heatmap" : "pins";
 
     setSupplierIdFilter(supplierId);
-    setSelectedId(supplierId || null);
+    setSelectedId(selectedParam || supplierId || null);
     setSearchQuery(query);
     setProvince(provinceParam);
     setViewMode(nextView);
@@ -101,6 +102,7 @@ function MapPageContent() {
 
     const nextParams = new URLSearchParams();
     if (supplierIdFilter) nextParams.set("supplier_id", supplierIdFilter);
+    if (selectedId && selectedId !== supplierIdFilter) nextParams.set("selected", selectedId);
     if (searchQuery) nextParams.set("query", searchQuery);
     if (province) nextParams.set("province", province);
     if (viewMode !== "pins") nextParams.set("view", viewMode);
@@ -113,7 +115,7 @@ function MapPageContent() {
     if (nextUrl !== currentUrl) {
       router.replace(nextUrl, { scroll: false });
     }
-  }, [pathname, province, router, searchParams, searchQuery, supplierIdFilter, viewMode]);
+  }, [pathname, province, router, searchParams, searchQuery, selectedId, supplierIdFilter, viewMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,6 +146,10 @@ function MapPageContent() {
           setSuppliers(result.rows);
           if (supplierIdFilter && result.rows.some((row) => row.supplier_id === supplierIdFilter)) {
             setSelectedId(supplierIdFilter);
+          } else {
+            setSelectedId((current) =>
+              current && result.rows.some((row) => row.supplier_id === current) ? current : null
+            );
           }
         }
       } catch (e) {
