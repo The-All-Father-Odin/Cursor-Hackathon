@@ -154,6 +154,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+By default, the app will use the bundled `data/odbus-subset.sqlite` file locally when it is available, which exposes the full 50K-row subset through the API. The checked-in JSON files under `src/data/` are a deployment-friendly fallback snapshot.
+
 ### Using the Full Database (446K suppliers)
 
 The repo includes a 50K supplier subset. To use the full 446K dataset:
@@ -163,6 +165,20 @@ The repo includes a 50K supplier subset. To use the full 446K dataset:
 
 ```bash
 DATABASE_PATH=/path/to/odbus_supplier_directory.sqlite npm run dev
+```
+
+### Refreshing the JSON Fallback Snapshot
+
+If you want to regenerate the deployment-friendly JSON fallback:
+
+```bash
+npm run export:data
+```
+
+This exports a 10K supplier snapshot by default. To export all rows from the configured SQLite database:
+
+```bash
+EXPORT_SUPPLIERS_LIMIT=all npm run export:data
 ```
 
 ---
