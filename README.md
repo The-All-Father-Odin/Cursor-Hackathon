@@ -43,7 +43,13 @@ Visualize supplier locations across Canada on an interactive Leaflet map. Color-
 Detailed supplier pages showing business information, industry classification (NAICS), location & contact details, employee data, licensing information, and data source attribution.
 
 ### Tariff & Landed-Cost Context
-Compare the cost of importing vs. buying Canadian. See applicable tariff rates and estimated landed-cost breakdowns. Know when domestic sourcing is already price-competitive after duties.
+Compare the cost of importing vs. buying Canadian. The current implementation now uses:
+
+- **CBSA tariff schedule data** for tariff-item lookup and treatment-aware rates
+- **Bank of Canada FX** for invoice-currency conversion to CAD
+- **manual freight inputs** by default
+- a **FedEx parcel quote adapter scaffold** for credentialed parcel rating
+- **supplier discovery / RFQ mode** instead of pretending to have a live domestic catalog price feed
 
 ### Shortlist Management
 Save suppliers to named shortlists. Export to CSV for internal procurement workflows. Share shortlists with team members.
@@ -121,12 +127,15 @@ data/
 | `GET` | `/api/suppliers` | Search suppliers with filters |
 | `GET` | `/api/suppliers/:id` | Supplier detail by ID |
 | `GET` | `/api/sources` | Data source catalogue |
+| `GET` | `/api/tariffs/lookup` | Resolve HS input to CBSA tariff-item candidates |
+| `POST` | `/api/tariffs/estimate` | Calculate imported landed-cost estimate |
+| `GET` | `/api/freight/fedex/health` | FedEx config/auth smoke test |
+| `POST` | `/api/freight/fedex/quote-test` | Dev-only FedEx parcel quote test |
 
 ### Search Parameters (`/api/suppliers`)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `supplier_id` | string | Exact supplier ID lookup for deep-linking or focused views |
 | `query` | string | Free-text search across name, sector, NAICS, tags |
 | `province` | string | 2-letter province code (ON, BC, AB, QC, etc.) |
 | `city` | string | City name (substring match) |
@@ -134,15 +143,6 @@ data/
 | `has_geocode` | boolean | Only return suppliers with lat/lon |
 | `limit` | integer | Max results (default: 20, max: 500) |
 | `offset` | integer | Pagination offset |
-
-### Map Deep-Link Parameters (`/en/map`, `/fr/map`)
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `supplier_id` | string | Focus the map on an exact supplier |
-| `query` | string | Persist the current free-text filter |
-| `province` | string | Persist the current province filter |
-| `view` | string | `"pins"` or `"heatmap"` |
 
 ---
 
@@ -164,7 +164,88 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-By default, the app will use the bundled `data/odbus-subset.sqlite` file locally when it is available, which exposes the full 50K-row subset through the API. The checked-in JSON files under `src/data/` are a deployment-friendly fallback snapshot.
+### Tariff / Freight Environment
+
+Copy the example environment file if you want to exercise the tariff and parcel quote stack:
+
+```bash
+cp .env.example .env.local
+```
+
+Important variables:
+
+| Variable | Purpose |
+|---|---|
+| `CBSA_TARIFF_YEAR` | Controls which CBSA tariff year the importer / resolver targets |
+| `FEDEX_CLIENT_ID` | FedEx OAuth client ID |
+| `FEDEX_CLIENT_SECRET` | FedEx OAuth client secret |
+| `FEDEX_ACCOUNT_NUMBER` | FedEx account number used for rate requests |
+| `FEDEX_AUTH_URL` | Optional FedEx OAuth override |
+| `FEDEX_RATE_URL` | Optional FedEx rate endpoint override |
+| `FEDEX_QUOTE_TEST_ENABLED` | Optional override to allow quote-test route outside local dev |
+
+### Generate a Local CBSA Snapshot
+
+The tariff resolver prefers a local CBSA snapshot when one exists:
+
+```bash
+npm run tariffs:import
+```
+
+This writes:
+
+```bash
+src/data/tariffs/cbsa-tariff-snapshot-2026.json
+```
+
+You can also limit the import to specific chapters while iterating:
+
+```bash
+npm run tariffs:import -- --chapters=73,84
+```
+
+### FedEx Connectivity Smoke Test
+
+Once FedEx credentials are configured, you can verify server-side readiness without exposing secrets:
+
+```bash
+GET /api/freight/fedex/health
+GET /api/freight/fedex/health?probe=auth
+```
+
+- the base route checks whether required env vars are present
+- `?probe=auth` performs a FedEx OAuth token probe only
+- it does **not** submit a shipment quote
+
+### FedEx Quote Test (development only)
+
+Once FedEx credentials are configured, you can run a development-only quote test route:
+
+```bash
+POST /api/freight/fedex/quote-test
+```
+
+Example JSON body:
+
+```json
+{
+  "originCountry": "US",
+  "originPostalCode": "10001",
+  "destinationCountry": "CA",
+  "destinationPostalCode": "V6B1A1",
+  "parcelWeightKg": 2.5,
+  "parcelLengthCm": 30,
+  "parcelWidthCm": 20,
+  "parcelHeightCm": 10
+}
+```
+
+Safety behavior:
+
+- blocked in production by default
+- enabled automatically in local development
+- can be explicitly enabled with `FEDEX_QUOTE_TEST_ENABLED=true`
+- returns only the parsed quote result (never OAuth tokens)
 
 ### Using the Full Database (446K suppliers)
 
@@ -175,20 +256,6 @@ The repo includes a 50K supplier subset. To use the full 446K dataset:
 
 ```bash
 DATABASE_PATH=/path/to/odbus_supplier_directory.sqlite npm run dev
-```
-
-### Refreshing the JSON Fallback Snapshot
-
-If you want to regenerate the deployment-friendly JSON fallback:
-
-```bash
-npm run export:data
-```
-
-This exports a 10K supplier snapshot by default. To export all rows from the configured SQLite database:
-
-```bash
-EXPORT_SUPPLIERS_LIMIT=all npm run export:data
 ```
 
 ---

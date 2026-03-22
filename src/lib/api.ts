@@ -1,3 +1,5 @@
+import type { TariffEstimateRequest, TariffEstimateResponse, TariffLookupResponse } from "@/types/tariff";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export interface ApiSupplier {
@@ -101,21 +103,36 @@ export interface SearchParams {
   fields?: string;
 }
 
-async function apiFetch<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
+async function apiFetch<T>(
+  path: string,
+  options?: {
+    method?: "GET" | "POST";
+    params?: Record<string, string | number | boolean | undefined>;
+    body?: unknown;
+    cache?: RequestCache;
+  }
+): Promise<T> {
   const queryParts: string[] = [];
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
+
+  if (options?.params) {
+    Object.entries(options.params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
       }
     });
   }
+
   const query = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
   const fetchUrl = `${API_BASE}${path}${query}`;
 
   const res = await fetch(fetchUrl, {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
+    method: options?.method ?? "GET",
+    headers: {
+      Accept: "application/json",
+      ...(options?.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+    cache: options?.cache ?? "no-store",
   });
 
   if (!res.ok) {
@@ -128,18 +145,20 @@ async function apiFetch<T>(path: string, params?: Record<string, string | number
 
 export async function searchSuppliers(params: SearchParams): Promise<SuppliersResponse> {
   return apiFetch<SuppliersResponse>("/suppliers", {
-    supplier_id: params.supplier_id,
-    query: params.query,
-    naics: params.naics,
-    province: params.province,
-    city: params.city,
-    capacity: params.capacity,
-    provider: params.provider,
-    status: params.status,
-    has_geocode: params.has_geocode,
-    limit: params.limit ?? 20,
-    offset: params.offset ?? 0,
-    fields: params.fields,
+    params: {
+      supplier_id: params.supplier_id,
+      query: params.query,
+      naics: params.naics,
+      province: params.province,
+      city: params.city,
+      capacity: params.capacity,
+      provider: params.provider,
+      status: params.status,
+      has_geocode: params.has_geocode,
+      limit: params.limit ?? 20,
+      offset: params.offset ?? 0,
+      fields: params.fields,
+    },
   });
 }
 
@@ -152,11 +171,28 @@ export async function getStats(): Promise<StatsResponse> {
 }
 
 export async function getSources(params?: { provider?: string; province?: string; city?: string; limit?: number; offset?: number }): Promise<SourcesResponse> {
-  return apiFetch<SourcesResponse>("/sources", params);
+  return apiFetch<SourcesResponse>("/sources", { params });
 }
 
 export async function getHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>("/health");
+}
+
+export async function estimateTariff(body: TariffEstimateRequest): Promise<TariffEstimateResponse> {
+  return apiFetch<TariffEstimateResponse>("/tariffs/estimate", {
+    method: "POST",
+    body,
+  });
+}
+
+export async function lookupTariffItems(params: { hs: string; originCountry?: string; claimPreference?: boolean }): Promise<TariffLookupResponse> {
+  return apiFetch<TariffLookupResponse>("/tariffs/lookup", {
+    params: {
+      hs: params.hs,
+      originCountry: params.originCountry,
+      claimPreference: params.claimPreference,
+    },
+  });
 }
 
 // Province code to name mapping
@@ -181,7 +217,7 @@ export const PROVINCE_CODE_LIST = Object.keys(PROVINCE_CODES);
 // Derive a Canadian content confidence indicator from available data
 export function deriveCanadianConfidence(supplier: ApiSupplier): { score: number; label: string } {
   let score = 25; // Base: registered in Canadian business registry
-  let signals: string[] = ["Registered in Canadian business registry"];
+  const signals: string[] = ["Registered in Canadian business registry"];
 
   // Has Canadian address
   if (supplier.full_address || supplier.city) {

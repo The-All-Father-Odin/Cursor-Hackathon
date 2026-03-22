@@ -8,9 +8,7 @@ export function LocaleHtmlSync() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const locale = getLocaleFromPath(pathname ?? "/");
-    document.documentElement.lang = locale;
-    document.documentElement.dir = "ltr";
+    document.documentElement.lang = getLocaleFromPath(pathname);
   }, [pathname]);
 
   return null;

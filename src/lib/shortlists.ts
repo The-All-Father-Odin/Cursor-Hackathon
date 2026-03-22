@@ -1,151 +1,30 @@
-import type { ApiSupplier } from "@/lib/api";
-import { deriveCanadianConfidence } from "@/lib/api";
-import type { Locale } from "@/lib/i18n";
-import type { Shortlist, ShortlistSupplier } from "@/types/supplier";
+import { ApiSupplier, deriveCanadianConfidence } from "@/lib/api";
+import { Locale } from "@/lib/i18n";
+import { Shortlist, ShortlistSupplier } from "@/types/supplier";
 
-const STORAGE_KEY = "sourcelocal.shortlists.v1";
-const DEFAULT_CREATED_AT = new Date(0).toISOString();
+const STORAGE_KEY = "sourcelocal-shortlists-v1";
 
-export const DEFAULT_SHORTLIST_ID = "default";
+export const DEFAULT_SHORTLIST_ID = "saved-suppliers";
 
 function createDefaultShortlist(): Shortlist {
   return {
     id: DEFAULT_SHORTLIST_ID,
     name: "Saved Suppliers",
     suppliers: [],
-    createdAt: DEFAULT_CREATED_AT,
+    createdAt: new Date(0).toISOString(),
   };
 }
 
-function ensureDefaultShortlist(shortlists: Shortlist[]): Shortlist[] {
-  const sanitized = shortlists
-    .filter((shortlist): shortlist is Shortlist =>
-      Boolean(shortlist && typeof shortlist.id === "string" && typeof shortlist.name === "string")
-    )
-    .map((shortlist) => ({
-      ...shortlist,
-      suppliers: Array.isArray(shortlist.suppliers) ? shortlist.suppliers : [],
-      createdAt: shortlist.createdAt || new Date().toISOString(),
-    }));
+export function getDefaultShortlistLabel(locale: Locale) {
+  return locale === "fr" ? "Fournisseurs enregistrés" : "Saved Suppliers";
+}
 
-  const defaultShortlist = sanitized.find((shortlist) => shortlist.id === DEFAULT_SHORTLIST_ID);
-  if (defaultShortlist) {
-    return sanitized.map((shortlist) =>
-      shortlist.id === DEFAULT_SHORTLIST_ID
-        ? { ...shortlist, createdAt: shortlist.createdAt || DEFAULT_CREATED_AT }
-        : shortlist
-    );
+export function getShortlistLabel(shortlist: Shortlist, locale: Locale) {
+  if (shortlist.id === DEFAULT_SHORTLIST_ID) {
+    return getDefaultShortlistLabel(locale);
   }
 
-  return [createDefaultShortlist(), ...sanitized];
-}
-
-function generateShortlistId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `shortlist-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function encodeBase64Url(value: string): string {
-  if (typeof window !== "undefined" && typeof window.btoa === "function") {
-    return window
-      .btoa(unescape(encodeURIComponent(value)))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/g, "");
-  }
-
-  return value;
-}
-
-function decodeBase64Url(value: string): string {
-  if (typeof window !== "undefined" && typeof window.atob === "function") {
-    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4 || 4)) % 4);
-    return decodeURIComponent(escape(window.atob(padded)));
-  }
-
-  return value;
-}
-
-export function readStoredShortlists(): Shortlist[] {
-  if (typeof window === "undefined") {
-    return [createDefaultShortlist()];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [createDefaultShortlist()];
-
-    const parsed = JSON.parse(raw) as Shortlist[];
-    return ensureDefaultShortlist(parsed);
-  } catch {
-    return [createDefaultShortlist()];
-  }
-}
-
-export function writeStoredShortlists(shortlists: Shortlist[]): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ensureDefaultShortlist(shortlists)));
-}
-
-export function createShortlist(shortlists: Shortlist[], name: string): Shortlist[] {
-  const trimmedName = name.trim();
-  if (!trimmedName) return ensureDefaultShortlist(shortlists);
-
-  return ensureDefaultShortlist([
-    ...shortlists,
-    {
-      id: generateShortlistId(),
-      name: trimmedName,
-      suppliers: [],
-      createdAt: new Date().toISOString(),
-    },
-  ]);
-}
-
-export function deleteShortlist(shortlists: Shortlist[], shortlistId: string): Shortlist[] {
-  if (shortlistId === DEFAULT_SHORTLIST_ID) return ensureDefaultShortlist(shortlists);
-  return ensureDefaultShortlist(shortlists.filter((shortlist) => shortlist.id !== shortlistId));
-}
-
-export function removeSupplierFromShortlist(
-  shortlists: Shortlist[],
-  shortlistId: string,
-  supplierId: string
-): Shortlist[] {
-  return ensureDefaultShortlist(
-    shortlists.map((shortlist) =>
-      shortlist.id === shortlistId
-        ? {
-            ...shortlist,
-            suppliers: shortlist.suppliers.filter((supplier) => supplier.id !== supplierId),
-          }
-        : shortlist
-    )
-  );
-}
-
-export function toggleSupplierInShortlist(
-  shortlists: Shortlist[],
-  shortlistId: string,
-  supplier: ShortlistSupplier
-): Shortlist[] {
-  const nextShortlists = ensureDefaultShortlist(shortlists).map((shortlist) => {
-    if (shortlist.id !== shortlistId) return shortlist;
-
-    const exists = shortlist.suppliers.some((entry) => entry.id === supplier.id);
-    return {
-      ...shortlist,
-      suppliers: exists
-        ? shortlist.suppliers.filter((entry) => entry.id !== supplier.id)
-        : [...shortlist.suppliers, supplier],
-    };
-  });
-
-  return ensureDefaultShortlist(nextShortlists);
+  return shortlist.name;
 }
 
 export function shortlistSupplierFromApi(supplier: ApiSupplier): ShortlistSupplier {
@@ -161,25 +40,130 @@ export function shortlistSupplierFromApi(supplier: ApiSupplier): ShortlistSuppli
   };
 }
 
-export function getShortlistLabel(shortlist: Shortlist, locale: Locale): string {
-  if (shortlist.id === DEFAULT_SHORTLIST_ID) {
-    return locale === "fr" ? "Fournisseurs sauvegardés" : "Saved Suppliers";
+export function normalizeShortlists(value: unknown): Shortlist[] {
+  if (!Array.isArray(value)) {
+    return [createDefaultShortlist()];
   }
 
-  return shortlist.name;
+  const normalized = value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+
+      const shortlist = entry as Partial<Shortlist>;
+      if (typeof shortlist.id !== "string" || typeof shortlist.name !== "string" || typeof shortlist.createdAt !== "string") {
+        return null;
+      }
+
+      const suppliers = Array.isArray(shortlist.suppliers)
+        ? shortlist.suppliers.filter(
+            (supplier): supplier is ShortlistSupplier =>
+              Boolean(supplier) &&
+              typeof supplier === "object" &&
+              typeof supplier.id === "string" &&
+              typeof supplier.name === "string" &&
+              typeof supplier.canadianContentScore === "number"
+          )
+        : [];
+
+      return {
+        id: shortlist.id,
+        name: shortlist.name,
+        createdAt: shortlist.createdAt,
+        suppliers,
+      };
+    })
+    .filter((shortlist): shortlist is Shortlist => shortlist !== null);
+
+  if (!normalized.some((shortlist) => shortlist.id === DEFAULT_SHORTLIST_ID)) {
+    normalized.unshift(createDefaultShortlist());
+  }
+
+  return normalized;
 }
 
-export function serializeShortlist(shortlist: Shortlist): string {
-  return encodeBase64Url(JSON.stringify(shortlist));
+export function readStoredShortlists(): Shortlist[] {
+  if (typeof window === "undefined") {
+    return [createDefaultShortlist()];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [createDefaultShortlist()];
+    return normalizeShortlists(JSON.parse(raw));
+  } catch {
+    return [createDefaultShortlist()];
+  }
+}
+
+export function writeStoredShortlists(shortlists: Shortlist[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeShortlists(shortlists)));
+}
+
+export function createShortlist(shortlists: Shortlist[], name: string): Shortlist[] {
+  const trimmed = name.trim();
+  if (!trimmed) return shortlists;
+
+  return [
+    ...shortlists,
+    {
+      id: `sl-${Date.now()}`,
+      name: trimmed,
+      suppliers: [],
+      createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
+export function deleteShortlist(shortlists: Shortlist[], id: string): Shortlist[] {
+  if (id === DEFAULT_SHORTLIST_ID) {
+    return shortlists.map((shortlist) =>
+      shortlist.id === DEFAULT_SHORTLIST_ID ? { ...shortlist, suppliers: [] } : shortlist
+    );
+  }
+
+  return shortlists.filter((shortlist) => shortlist.id !== id);
+}
+
+export function removeSupplierFromShortlist(shortlists: Shortlist[], shortlistId: string, supplierId: string): Shortlist[] {
+  return shortlists.map((shortlist) =>
+    shortlist.id === shortlistId
+      ? {
+          ...shortlist,
+          suppliers: shortlist.suppliers.filter((supplier) => supplier.id !== supplierId),
+        }
+      : shortlist
+  );
+}
+
+export function toggleSupplierInShortlist(
+  shortlists: Shortlist[],
+  shortlistId: string,
+  supplier: ShortlistSupplier
+): Shortlist[] {
+  return shortlists.map((shortlist) => {
+    if (shortlist.id !== shortlistId) return shortlist;
+
+    const exists = shortlist.suppliers.some((entry) => entry.id === supplier.id);
+
+    return {
+      ...shortlist,
+      suppliers: exists
+        ? shortlist.suppliers.filter((entry) => entry.id !== supplier.id)
+        : [supplier, ...shortlist.suppliers],
+    };
+  });
+}
+
+export function serializeShortlist(shortlist: Shortlist) {
+  return JSON.stringify(shortlist);
 }
 
 export function deserializeShortlist(value: string | null): Shortlist | null {
   if (!value) return null;
 
   try {
-    const parsed = JSON.parse(decodeBase64Url(value)) as Shortlist;
-    const [shortlist] = ensureDefaultShortlist([parsed]).filter((entry) => entry.id === parsed.id);
-    return shortlist ?? null;
+    return normalizeShortlists([JSON.parse(value)])[0] ?? null;
   } catch {
     return null;
   }

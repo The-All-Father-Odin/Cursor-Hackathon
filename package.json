@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "export:data": "node scripts/export-json.mjs"
+    "tariffs:import": "node scripts/import-cbsa-tariffs.mjs"
   },
   "keywords": [],
   "author": "",
