@@ -174,7 +174,7 @@ export function LandingPage() {
         ];
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-x-hidden homepage-standard-font">
       {/* ─── Hero ──────────────────────────────────────────────── */}
       <section className="relative min-h-[92vh] flex flex-col items-center justify-center bg-snow overflow-hidden">
         {/* Radial maple glow top-right */}
