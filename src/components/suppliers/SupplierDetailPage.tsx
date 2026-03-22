@@ -8,6 +8,7 @@ import { getProvinceLabel } from "@/lib/i18n";
 import { getSupplierReturnTarget } from "@/lib/navigation";
 import { CanadianContentBadge } from "@/components/ui/CanadianContentBadge";
 import { CapacityBadge } from "@/components/ui/CapacityBadge";
+import SupplierDetailSkeleton from "@/components/suppliers/SupplierDetailSkeleton";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -162,15 +163,7 @@ export default function SupplierDetailPage({ initialSupplier = null }: SupplierD
   }, [copy.loadError, initialSupplier, supplierId]);
 
   if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-slate-200 rounded w-1/3" />
-          <div className="h-4 bg-slate-200 rounded w-1/2" />
-          <div className="h-64 bg-slate-200 rounded-2xl" />
-        </div>
-      </div>
-    );
+    return <SupplierDetailSkeleton />;
   }
 
   if (error || !supplier) {
